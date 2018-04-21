@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TakEs</string>
+
+    <string name="firstName">İsminiz</string>
+    <string name="mail">Mail Adresiniz</string>
+    <string name="registerBtn">Kayıt Ol</string>
+
+</resources>
