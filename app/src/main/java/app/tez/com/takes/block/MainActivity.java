@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import app.tez.com.takes.R;
-import app.tez.com.takes.block.socket.ClientAct;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
@@ -117,7 +116,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 showSavedFileData(readMessageFromSDCard());
                 break;
             case R.id.socket:
-                socket();
                 break;
             case R.id.json:
                 Intent json = new Intent(MainActivity.this, app.tez.com.takes.block.anasayfa.MainActivity.class);
@@ -292,14 +290,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             readMessageLayout.setVisibility(View.VISIBLE);//Make visible the read message layout
         }
     }
-
-    //Delete text file method
-    private void socket() {
-
-        Intent socket = new Intent(MainActivity.this, ClientAct.class);
-        startActivity(socket);
-    }
-
 
     /**
      * Permission Code for MARSHMALLOW DEVICES

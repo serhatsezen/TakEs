@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="app.tez.com.takes">
+
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -19,11 +21,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".block.socket.ServerSide"/>
-        <activity android:name=".block.socket.ClientAct"/>
         <activity android:name=".block.anasayfa.KayitOlEkrani" android:theme="@style/AppTheme.Dark"/>
+
+        <service android:name=".block.TCPSERVERCLIENT.KayitEkraniService"/>
+        <service android:name=".block.TCPSERVERCLIENT.DosyaGonderService"/>
         <service
-            android:name=".block.socket.ServerService"
+            android:name=".block.TCPSERVERCLIENT.ServerService"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

@@ -28,7 +28,6 @@ import javax.crypto.SecretKey;
 
 
 import app.tez.com.takes.R;
-import app.tez.com.takes.block.socket.ClientAct;
 
 public class Register extends Activity {
 
@@ -54,13 +53,7 @@ public class Register extends Activity {
         decrype = (Button) findViewById(R.id.decrype);
         main = (Button) findViewById(R.id.mainact);
 
-        main.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent mainAct = new Intent(Register.this, ClientAct.class);
-                startActivity(mainAct);
-            }
-        });
+
         registerBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
