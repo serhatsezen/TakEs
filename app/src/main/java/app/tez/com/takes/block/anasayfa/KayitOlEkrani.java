@@ -2,14 +2,17 @@ package app.tez.com.takes.block.anasayfa;
 
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -18,6 +21,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.scottyab.aescrypt.AESCrypt;
+import com.sun.mail.imap.Utility;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,8 +48,10 @@ import java.util.Enumeration;
 
 import app.tez.com.takes.R;
 import app.tez.com.takes.block.Block;
+import app.tez.com.takes.block.Models.KayitBilgisiDTO;
 import app.tez.com.takes.block.SifreMailGonder.Mail;
-import app.tez.com.takes.block.TCPSERVERCLIENT.KayitEkraniService;
+import app.tez.com.takes.block.TCPSERVERCLIENT.CihazlarServis;
+import app.tez.com.takes.block.TCPSERVERCLIENT.KullaniciKayitServisi;
 import dmax.dialog.SpotsDialog;
 
 
@@ -87,8 +93,6 @@ public class KayitOlEkrani extends AppCompatActivity {
     public static ArrayList<Block> blockchain = new ArrayList<Block>();
 
     //Preferences to Store TimStamp when data is Saved
-    private static SharedPreferences timeSharedPreferences;
-    private static SharedPreferences.Editor editor;
     int bytesRead;
     InputStream is;
     byte[] bytes;
@@ -96,13 +100,16 @@ public class KayitOlEkrani extends AppCompatActivity {
     FileOutputStream fos;
     String lip;
 
+    SharedPreferences sharedPrefs;
+    SharedPreferences.Editor editor;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.kayitekrani);
 
-        dialog = new SpotsDialog(KayitOlEkrani.this, R.style.Custom);
+//        dialog = new SpotsDialog(KayitOlEkrani.this, R.style.Custom);
 
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(KayitOlEkrani.this);
 
         kaydet = (Button) findViewById(R.id.btn_signup);
         firsName = (EditText) findViewById(R.id.input_name);
@@ -116,8 +123,10 @@ public class KayitOlEkrani extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        getIpAddress();
+        ip = sharedPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
 
+        firsName.setText("Aydın Serhat");
+        email.setText("serhatssezen@gmail.com");
 
         String[] parts = ip.split("\\.");
         String part1 = parts[0];
@@ -489,10 +498,10 @@ public class KayitOlEkrani extends AppCompatActivity {
 
 
     public void kayitServiceCagir(){
-        Intent intent = new Intent(KayitOlEkrani.this, KayitEkraniService.class);
-        intent.putExtra("mail", edtxEmail);
-        intent.putExtra("adsoyad", edtxAdSoyad);
-        intent.putExtra("ipadresim", ip);
+        String kayitOlanBilgiler = edtxEmail + "/" + edtxAdSoyad + "/" + ip;
+
+        Intent intent = new Intent(KayitOlEkrani.this, KullaniciKayitServisi.class);
+        intent.putExtra("kayitOlanBilgileri", kayitOlanBilgiler);
         intent.putExtra("veritabani", "veritabani");
         startService(intent);
 

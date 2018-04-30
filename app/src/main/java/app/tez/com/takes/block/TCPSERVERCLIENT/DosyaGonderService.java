@@ -7,32 +7,47 @@ package app.tez.com.takes.block.TCPSERVERCLIENT;
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 
 import app.tez.com.takes.block.CheckForSDCard;
+import app.tez.com.takes.block.Models.DeviceDTO;
 
 public class DosyaGonderService extends Service {
     Intent intent;
@@ -43,21 +58,32 @@ public class DosyaGonderService extends Service {
     private static final String DirectoryName = "TakES";//Main Directory Name
     private static final String FileName = "veritabani.txt";//Text File Name
 
+    JSONArray veritabani = new JSONArray();
+    JSONObject girisKontrolNesne;
 
-    String dosya,ipadresi,kendiIpAdresi;
+    JSONObject prevNesne;
+
+    String gonderilecekDosya,socketIp,kendiIpAdresi,veritabanindanIpAdresi;
     String[] parts;
+    String gonderildi = "";
+
+    SharedPreferences sharedPrefs;
+    public static final String CIHAZLAR = "cihazlarshared";
 
     @Nullable
     @Override
     public IBinder onBind(Intent ıntent) {
         return null;
     }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-
-        return super.onStartCommand(intent, flags, startId);
-    }
+//
+//    @Override
+//    public int onStartCommand(Intent intent, int flags, int startId) {
+//
+//
+//
+//
+//        return super.onStartCommand(intent, flags, startId);
+//    }
 
     @Override
     public void onCreate()
@@ -70,56 +96,172 @@ public class DosyaGonderService extends Service {
     @Override
     public void onStart(Intent intent, int startId)
     {
-        dosya = intent.getStringExtra("dosya");
-        ipadresi = intent.getStringExtra("ipadresi");
-        getIpAddress();
 
-        new Connection().execute("");
-    }
+        if (intent.getStringExtra("benHashiCozdum") != null) {
+            gonderilecekDosya = intent.getStringExtra("benHashiCozdum");
+        } else {
 
-    private class Connection extends AsyncTask {
-
-        @Override
-        protected Object doInBackground(Object... arg0) {
-            runTcpClient();
-            return null;
         }
 
+        if (intent.getStringExtra("dosya") != null) {
+            gonderilecekDosya = intent.getStringExtra("dosya");
+        } else {
+
+        }
+
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(DosyaGonderService.this);
+
+        kendiIpAdresi = sharedPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
+
+
+        fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
+
+        veritabaniYukle();
+
+        String[] parts = kendiIpAdresi.split("\\.");
+        String part1 = parts[0];
+        String part2 = parts[1];
+        String part3 = parts[2];
+
+        socketIp = part1 + "." + part2 + "." + part3 + ".";
+
+
+        ClientRxThread clientRxThread =
+                new ClientRxThread(
+                        socketIp,
+                        SocketServerPORT);
+
+        clientRxThread.start();
+
     }
 
-    private void runTcpClient() {
-        Socket s = null;
-        parts = ipadresi.split("//");
-
+    //---------- JSON Dosyasındaki verileri burada uygulamaya yüklüyoruz.
+    public void veritabaniYukle() {
+        File dosya = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
         try {
-            for(int t = 0; t <= parts.length; t++) {
-                if(kendiIpAdresi != parts[t]) {
-                    s = new Socket(parts[t], SocketServerPORT);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-                    //send output msg
-                    out.write("dosyagonderkontrol" + dosya);
-                    out.flush();
-                    //accept server response
-                    out.close();
-
-                    final String inMsg = in.readLine();
-
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(DosyaGonderService.this, inMsg, Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-                        }
-                    });
-
-                    //close connection
-                    s.close();
-                }
+            if (!dosya.exists()) {
+                FileOutputStream fileOutputStream = new FileOutputStream(dosya);
+                OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
+                outputStreamWriter.write(veritabani.toString());
+                outputStreamWriter.close();
+                fileOutputStream.close();
+            } else {
+                FileInputStream fileInputStream = new FileInputStream(dosya);
+                InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                //--- Dosyadaki verileri bir JSON Nesnesine aktarıyoruz.
+                veritabani = new JSONArray(bufferedReader.readLine());
             }
-        } catch (UnknownHostException e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    public class ClientRxThread extends Thread {
+        String dstAddress;
+        int dstPort;
+
+        public ClientRxThread(String address, int port) {
+            dstAddress = address;
+            dstPort = port;
+        }
+
+        @Override
+        public void run() {
+            ArrayList<DeviceDTO> cihazlar = new ArrayList<DeviceDTO>();
+            Socket s = null;
+            Gson gson = new Gson();
+            String json = sharedPrefs.getString(CIHAZLAR, null);
+            Type type = new TypeToken<ArrayList<DeviceDTO>>() {}.getType();
+            cihazlar = gson.fromJson(json, type);
+
+
+            for(int sira=0; sira<veritabani.length();sira++){                                       //veritabanindaki ip adresini kontrol ediyoruz
+                try {                                                                               //cihazlar listesinde yoksa ekliyoruz.
+                    girisKontrolNesne = veritabani.getJSONObject(sira);
+                    veritabanindanIpAdresi = girisKontrolNesne.getString("ipaddres");
+
+                    if(!cihazlar.contains(veritabanindanIpAdresi)) {
+                        DeviceDTO veritabanindanIp = new DeviceDTO();
+                        veritabanindanIp.setIp(veritabanindanIpAdresi);
+                        cihazlar.add(veritabanindanIp);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+
+            if (cihazlar.size() > 0) {
+                for (int i = 0; i < cihazlar.size(); i++) {
+                    try {
+                        socketIp = String.valueOf(cihazlar.get(i).getIp());
+
+                        if (!socketIp.equals(kendiIpAdresi)) {
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(DosyaGonderService.this,
+                                            "Dosya Gonder Servisi" + socketIp,
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            });
+                            s = new Socket(socketIp, SocketServerPORT);
+
+                            BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+                            //send output msg
+                            if (gonderilecekDosya.contains("benHashiCozdum")) {
+                                out.write(gonderilecekDosya);
+                                out.flush();
+                                out.close();
+                                //close connection
+                                s.close();
+                            } else if (gonderilecekDosya.contains("dosya")) {
+//                                parts = gonderilecekDosya.split("/////");
+//                                gonderilecekDosya = parts[1];
+
+                                out.write(gonderilecekDosya);
+                                out.flush();
+                                out.close();
+                                //close connection
+                                s.close();
+                            }
+                        }
+                    } catch (UnknownHostException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        final String eMsg = "Something wrong: " + e.getMessage();
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(DosyaGonderService.this,
+                                        eMsg,
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(DosyaGonderService.this,
+                                "cihaz yok",
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+
+
         }
     }
 
@@ -149,4 +291,14 @@ public class DosyaGonderService extends Service {
 
         return kendiIpAdresi;
     }
+
+    @Override
+    public void onDestroy() {
+        // handler.removeCallbacks(sendUpdatesToUI);
+        super.onDestroy();
+        Log.v("STOP_SERVICE", "DONE");
+        Toast.makeText(DosyaGonderService.this,"CihazlarServis destroy", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+
+    }
+
 }

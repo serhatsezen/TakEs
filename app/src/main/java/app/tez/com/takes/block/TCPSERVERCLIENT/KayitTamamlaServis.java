@@ -4,14 +4,16 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.scottyab.aescrypt.AESCrypt;
 
 import org.json.JSONArray;
@@ -26,9 +28,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Type;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -37,44 +38,48 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 
 import app.tez.com.takes.block.Block;
-import app.tez.com.takes.block.CheckForSDCard;
+import app.tez.com.takes.block.Models.DeviceDTO;
 import app.tez.com.takes.block.SifreMailGonder.Mail;
 import app.tez.com.takes.block.anasayfa.KayitOlEkrani;
 
 /**
- * Created by serhat on 23.04.2018.
+ * Created by serhat on 29.04.2018.
  */
 
-public class KayitEkraniService extends Service {
-    Intent intent;
-    public static final String BROADCAST_ACTION = "Hello World";
+public class KayitTamamlaServis extends Service {
+
+
+    private Thread mythread;
+    private boolean running;
+    private boolean hashCozdumGonderildi = false;
+    private boolean dosyaGonderildi = false;
+
+
     static final int SocketServerPORT = 8080;
+    ServerSocket serverSocket;
+    JSONArray veritabani;
+    JSONObject prevNesne;
 
     private static File fileDirectory = null;//Main Directory File
     private static final String DirectoryName = "TakES";//Main Directory Name
     private static final String FileName = "veritabani.txt";//Text File Name
 
-
-    String adsoyad,ipadresim,sonhali, lastIp, socketIp;
-    String gonderildi = "";
-
-    JSONArray veritabani;
-    JSONObject prevNesne;
+    Intent intent;
+    public static final String BROADCAST_ACTION = "Hello World";
 
     int randomNumber;
     JSONObject yeniKayit = new JSONObject();
 
-    String password, prevKey, mail,nameSurname,ipadress
-            ,cryptedName,cryptedEmail,cryptedPass, ipaddressleri;
+    String password, prevKey, mail, nameSurname, ipadress, cryptedName, cryptedEmail, cryptedPass, ipaddressleri;
 
     String encrypPass = "takesPass";                            //şifreleme için key
-    String dosyami = "";
 
     File veritabanımız;
     public static int difficulty = 5;
     public static ArrayList<Block> blockchain = new ArrayList<Block>();
-    public static ArrayList<String> ipadressler = new ArrayList<String>();
 
+    String gelenVeri;
+    String[] veriParcala;
 
     @Nullable
     @Override
@@ -85,110 +90,72 @@ public class KayitEkraniService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        mail = intent.getStringExtra("mail");
-        adsoyad = intent.getStringExtra("adsoyad");
-        ipadresim = intent.getStringExtra("ipadresim");
-        sonhali = mail + "/" + adsoyad + "/" + ipadresim;
-
-        String[] parts = ipadresim.split("\\.");
-        String part1 = parts[0];
-        String part2 = parts[1];
-        String part3 = parts[2];
-
-        lastIp = part1 + "." + part2 + "." + part3 + ".";
-
-        new Connection().execute();
 
         return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
-    public void onCreate()
-    {
+    public void onCreate() {
         super.onCreate();
         intent = new Intent(BROADCAST_ACTION);
     }
 
     @SuppressLint("MissingPermission")
     @Override
-    public void onStart(Intent intent, int startId)
-    {
+    public void onStart(final Intent intent, int startId) {
+        fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
 
-        if (new CheckForSDCard().isSDCardPresent()) {
-            fileDirectory = new File(
-                    Environment.getExternalStorageDirectory() + "/"
-                            + DirectoryName);
-        } else
-            Toast.makeText(KayitEkraniService.this, "SD Card is not present.", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+        veritabaniYukle();
+
+        running = true;
+        mythread = new Thread() {
+            @Override
+            public void run() {
+                while (running) {
+                    try {
+                        gelenVeri = intent.getStringExtra("kayitBilgisi");
+                        veriParcala = gelenVeri.split("/");
+                        mail = veriParcala[0];
+                        nameSurname = veriParcala[1];
+                        ipadress = veriParcala[2];
+
+                        kayitOl();
+
+
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+        };
+        mythread.start();
+
+        Toast.makeText(KayitTamamlaServis.this, " ", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
 
 
     }
 
-    private class Connection extends AsyncTask {
+    public class KayitTamamla extends AsyncTask {
 
         @Override
         protected Object doInBackground(Object... arg0) {
-            runTcpClient();
+
             return null;
         }
 
-    }
+        protected void onCancelled() {
+            // Do something when async task is cancelled
 
-    private void runTcpClient() {
-        Socket s = null;
-        for (int i = 20; i <= 28; i++) {
-            try {
-                socketIp = lastIp + i;
-                if ((!ipadresim.equals(socketIp))) {
-                    s = new Socket(socketIp, SocketServerPORT);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-                    //send output msg
-                    out.write(sonhali);
-                    out.flush();
-                    //accept server response
-
-                    out.close();
-                    gonderildi = "basarili";
-                    final String inMsg = in.readLine();
-
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(KayitEkraniService.this, inMsg, Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-
-                        }
-                    });
-
-                    //close connection
-                    s.close();
-                }
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                final String eMsg = "Something wrong: " + e.getMessage();
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(KayitEkraniService.this,
-                                    eMsg,
-                                    Toast.LENGTH_LONG).show();
-                    }
-                });
-                e.printStackTrace();
-            }
-        }
-        if (gonderildi.equals("")) {
-            VeritabaniYukle();
-
-            kayitOl();
         }
 
+        // After each task done
+        protected void onProgressUpdate(Integer... progress) {
 
+        }
     }
 
     //---------- JSON Dosyasındaki verileri burada uygulamaya yüklüyoruz.
-    public void VeritabaniYukle() {
+    public void veritabaniYukle() {
         File dosya = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
         try {
             if (!dosya.exists()) {
@@ -213,38 +180,39 @@ public class KayitEkraniService extends Service {
         }
     }
 
-    public void kayitOl(){
+    public void kayitOl() {
 
-        randomNumber = 20 + (int)(Math.random()*30);    // şifre oluşturmak için 20 ile 50 arasında random sayı üretiyoruz.
+        randomNumber = 20 + (int) (Math.random() * 30);    // şifre oluşturmak için 20 ile 50 arasında random sayı üretiyoruz.
         password = getAlphaNumeric(randomNumber);       // random sayı kadar basamaklı bir alfanumeric şifre üretiyoruz.
 
+        //-- Yeni bir JSON Nesnesi oluşturuyoruz
         try {
             if (veritabani.length() > 0) {                                                 // veritabanında kayıt varsa
-                prevNesne = veritabani.getJSONObject(veritabani.length()-1);         //yeni blocktan önceki blogu nesne olarak aldık.
+                prevNesne = veritabani.getJSONObject(veritabani.length() - 1);         //yeni blocktan önceki blogu nesne olarak aldık.
                 prevKey = prevNesne.getString("hash");                               //o nesnenin chain id sini aldık
 
                 try {                                                                      // kullanıcı verilerini şifreledik.
-                    cryptedName = AESCrypt.encrypt(encrypPass, adsoyad );
+                    cryptedName = AESCrypt.encrypt(encrypPass, nameSurname);
                     cryptedEmail = AESCrypt.encrypt(encrypPass, mail);
                     cryptedPass = AESCrypt.encrypt(encrypPass, password);
-                }catch (GeneralSecurityException e){
+                } catch (GeneralSecurityException e) {
                     //handle error
                 }
 
-                addBlock(new Block(cryptedEmail, cryptedName , ipadresim , prevKey));
+                addBlock(new Block(cryptedEmail, cryptedName, ipadress, prevKey));
 
             } else {
                 String encrypPass = "takesPass";
 
                 try {
-                    cryptedName = AESCrypt.encrypt(encrypPass, adsoyad);
+                    cryptedName = AESCrypt.encrypt(encrypPass, nameSurname);
                     cryptedEmail = AESCrypt.encrypt(encrypPass, mail);
                     cryptedPass = AESCrypt.encrypt(encrypPass, password);
-                }catch (GeneralSecurityException e){
+                } catch (GeneralSecurityException e) {
                     //handle error
                 }
 
-                addBlock(new Block(cryptedEmail, cryptedName, ipadresim , "0"));
+                addBlock(new Block(cryptedEmail, cryptedName, ipadress, "0"));
 
             }
         } catch (JSONException e) {
@@ -252,11 +220,22 @@ public class KayitEkraniService extends Service {
         }
 
         new SendMail().execute("");
+
+
     }
 
     public void addBlock(Block newBlock) {
         newBlock.mineBlock(difficulty);
         blockchain.add(newBlock);
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(KayitTamamlaServis.this, "BlokYazıldı", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+            }
+        });
+
+        hashiCozdumDiyeSeslen();
 
         String hash = blockchain.get(0).hash;
         String previousHash = blockchain.get(0).previousHash;
@@ -267,13 +246,14 @@ public class KayitEkraniService extends Service {
         String nonce = String.valueOf(blockchain.get(0).nonce);
 
         try {
-            yeniKayit.put("hash",hash);
-            yeniKayit.put("previousHash",previousHash);
-            yeniKayit.put("mail",mail);
-            yeniKayit.put("adsoyad",adsoyad);
-            yeniKayit.put("ipaddres",ipad);
-            yeniKayit.put("timeStamp",timeStamp);
-            yeniKayit.put("nonce",nonce);
+            yeniKayit.put("hash", hash);
+            yeniKayit.put("previousHash", previousHash);
+            yeniKayit.put("mail", mail);
+            yeniKayit.put("adsoyad", adsoyad);
+            yeniKayit.put("ipaddres", ipad);
+            yeniKayit.put("timeStamp", timeStamp);
+            yeniKayit.put("nonce", nonce);
+            yeniKayit.put("cihazAdi", Build.MODEL);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -300,9 +280,7 @@ public class KayitEkraniService extends Service {
         @Override
         protected String doInBackground(String... params) {
             try {
-                if (!dosyami.equals("dosyagonderkontrol")) {
-                    sendMail();
-                }
+                sendMail();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -321,21 +299,19 @@ public class KayitEkraniService extends Service {
         m.setSubject("Uygulamamıza hoşgeldiniz.");
         m.setBody(mesaj);
 
-        if(m.send()) {
+        if (m.send()) {
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(KayitEkraniService.this, "Kayıt tamam", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-                    if (!dosyami.equals("dosyagonderkontrol")) {
-                        kayitTamamla();
-                    }
+                    Toast.makeText(KayitTamamlaServis.this, "Kayıt tamam", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+                    kayitTamamla();
                 }
             });
         } else {
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(KayitEkraniService.this, "Kayıt yalan", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+                    Toast.makeText(KayitTamamlaServis.this, "Kayıt yalan", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
 
                 }
             });
@@ -344,7 +320,7 @@ public class KayitEkraniService extends Service {
     }
 
 
-    public void kayitTamamla(){
+    public void kayitTamamla() {
         try {
             if (!fileDirectory.exists())
                 fileDirectory.mkdir();
@@ -358,11 +334,52 @@ public class KayitEkraniService extends Service {
             outputStreamWriter.close();
             fileOutputStream.close();
 
+            alinBudaDosya();
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
+    @Override
+    public void onDestroy() {
+        // handler.removeCallbacks(sendUpdatesToUI);
+        running = false;
+        super.onDestroy();
+        Toast.makeText(KayitTamamlaServis.this, "Servis Destroy edildi. KayitTamamlaServisi.", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void hashiCozdumDiyeSeslen() {
+        running = false;
+
+        if (hashCozdumGonderildi = false) {
+            hashCozdumGonderildi = true;
+            Intent intent = new Intent(KayitTamamlaServis.this, DosyaGonderService.class);
+            intent.putExtra("benHashiCozdum", "benHashiCozdum/////" + blockchain.get(0).hash);
+            startService(intent);
+        }
+    }
+
+    public void alinBudaDosya() {
+        running = false;
+
+        if (dosyaGonderildi == false) {
+            dosyaGonderildi = true;
+            Intent intent = new Intent(KayitTamamlaServis.this, DosyaGonderService.class);
+            intent.putExtra("dosya", "dosya/////" + veritabani.toString());
+            startService(intent);
+        }
+    }
 }

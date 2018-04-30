@@ -6,6 +6,7 @@ package app.tez.com.takes.block.TCPSERVERCLIENT;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
@@ -73,8 +74,7 @@ public class ServerService extends Service {
     int randomNumber;
     JSONObject yeniKayit = new JSONObject();
 
-    String password, prevKey, mail,nameSurname,ipadress
-            ,cryptedName,cryptedEmail,cryptedPass, ipaddressleri;
+    String password, prevKey, mail, nameSurname, ipadress, cryptedName, cryptedEmail, cryptedPass, ipaddressleri;
 
     String encrypPass = "takesPass";                            //şifreleme için key
     String dosyami = "";
@@ -84,7 +84,17 @@ public class ServerService extends Service {
     public static ArrayList<Block> blockchain = new ArrayList<Block>();
     public static ArrayList<String> ipadressler = new ArrayList<String>();
 
-    JSONObject girisKontrolNesne;
+    JSONObject veritabaniKontrolNesne;
+    JSONObject gelenVeriKontrolNesne;
+    JSONArray gelenveriArray;
+
+    String nereye, gelenveri;
+
+//    private KullaniciKayitServisi.KayitRun mThreadKayitRun;
+
+
+    KayitTamamlaServis kayitTamamla = new KayitTamamlaServis();
+    KullaniciKayitServisi kayitServis = new KullaniciKayitServisi();
 
 
     @Nullable
@@ -100,21 +110,21 @@ public class ServerService extends Service {
     }
 
     @Override
-    public void onCreate()
-    {
+    public void onCreate() {
         super.onCreate();
         intent = new Intent(BROADCAST_ACTION);
     }
 
     @SuppressLint("MissingPermission")
     @Override
-    public void onStart(Intent intent, int startId)
-    {
+    public void onStart(Intent intent, int startId) {
         fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
+
+        VeritabaniYukle();
 
         serverSocketThread = new ServerSocketThread();
         serverSocketThread.start();
-        Toast.makeText(ServerService.this,  getIpAddress(), Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+        Toast.makeText(ServerService.this, "Server Service" + getIpAddress(), Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
 
 
     }
@@ -208,71 +218,125 @@ public class ServerService extends Service {
 
     }
 
+    //gelen dosya
     public class FileTxThread extends Thread {
         Socket socket;
 
-        FileTxThread(Socket socket){
-            this.socket= socket;
+        FileTxThread(Socket socket) {
+            this.socket = socket;
         }
 
         @Override
         public void run() {
 
-            File file = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
-
-            byte[] bytes = new byte[(int) file.length()];
-            BufferedInputStream bis;
-            OutputStream os;
             try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-                //receive a message
+
                 final String incomingMsg = in.readLine();
+
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(ServerService.this, incomingMsg, Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-
                     }
                 });
+                //receive a message
 
-                VeritabaniYukle();
-
-                if (incomingMsg.contains("dosyagonderkontrol")) {
-                    String[] partsdosya = incomingMsg.split("dosyagonderkontrol");
-                    dosyami = partsdosya[0];
-                    String kayitmi = partsdosya[1];
-                    veritabanımız = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
-                    FileOutputStream fileOutputStream = new FileOutputStream(veritabanımız);
-                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
-                    outputStreamWriter.write(kayitmi);
-                    outputStreamWriter.close();
-                    fileOutputStream.close();
-                    dosyaGonderServisiCagir();
-
+                if (incomingMsg == null) {
                 } else {
-                    String[] parts = incomingMsg.split("/");
-                    mail = parts[0];
-                    nameSurname = parts[1];
-                    ipadress = parts[2];
-                    if (!dosyami.equals("dosyagonderkontrol")) {
-                        kayitOl();
+                    VeritabaniYukle();
+
+                    String[] parts = incomingMsg.split("/////");
+                    nereye = parts[0];
+                    gelenveri = parts[1];
+
+
+
+                    if (nereye.equals("kayit")) {
+                        String[] veriParcala = gelenveri.split("/");
+                        String gelenmail = veriParcala[0];
+                        if (veritabani.length() > 0) {
+                            for (int sira = 0; sira < veritabani.length(); sira++) {
+                                veritabaniKontrolNesne = veritabani.getJSONObject(sira);
+                                String useremail = veritabaniKontrolNesne.getString("email");
+                                String decryptMail = AESCrypt.decrypt(encrypPass, useremail);
+                                if (!decryptMail.equals(gelenmail)) {
+                                    Intent kayitService = new Intent(ServerService.this, KayitTamamlaServis.class);
+                                    kayitService.putExtra("kayitBilgisi", gelenveri);
+                                    startService(kayitService);
+                                } else {
+                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(ServerService.this, "Mail Adresi Kayıtli ", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+                                        }
+                                    });
+                                }
+                            }
+                        } else {
+                            Intent kayitService = new Intent(ServerService.this, KayitTamamlaServis.class);
+                            kayitService.putExtra("kayitBilgisi", gelenveri);
+                            startService(kayitService);
+                        }
+                    } else if (nereye.equals("benHashiCozdum")) {
+                        stopService(new Intent(ServerService.this, KayitTamamlaServis.class));
+                        stopService(new Intent(ServerService.this, KullaniciKayitServisi.class));
+//                        kayitServis.new KayitRun().cancel(true);
+
+//                        stopService(new Intent(ServerService.this, KayitTamamlaServis.class));
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ServerService.this, "Ulan Hash ÇÖzüldü servisler kapatldı.", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
+                            }
+                        });
+
+                    } else if (nereye.equals("dosya")) {
+//                        veritabaniKontrolNesne = veritabani.getJSONObject(veritabani.length());
+//                        String useremail = veritabaniKontrolNesne.getString("email");
+//                        String decryptMail = AESCrypt.decrypt(encrypPass, useremail);
+//
+//                        FileInputStream fileInputStream = new FileInputStream(gelenveri);
+//                        InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
+//                        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+//                        //--- Dosyadaki verileri bir JSON Nesnesine aktarıyoruz.
+//                        gelenveriArray = new JSONArray(bufferedReader.readLine());
+//
+//                        gelenVeriKontrolNesne = gelenveriArray.getJSONObject(gelenveriArray.length());
+//                        String useremailgelen = veritabaniKontrolNesne.getString("email");
+//                        String decryptMailgelen = AESCrypt.decrypt(encrypPass, useremailgelen);
+
+//                        veritabani.put(gelenVeriKontrolNesne);
+
+                        //-- veritabani'nin son halini JSON dosyasına kaydediyoruz.
+                        veritabanımız = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
+                        FileOutputStream fileOutputStream = new FileOutputStream(veritabanımız);
+                        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
+                        outputStreamWriter.write(gelenveri);
+                        outputStreamWriter.close();
+                        fileOutputStream.close();
+
+//                        if (decryptMail.equals(decryptMailgelen)) {
+//                        }
                     }
                 }
+
 
                 socket.close();
 
             } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             } catch (IOException e) {
-                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
                 e.printStackTrace();
             } finally {
                 try {
                     socket.close();
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             }
@@ -280,27 +344,27 @@ public class ServerService extends Service {
         }
     }
 
-    public void kayitOl(){
+    public void kayitOl() {
 
-        randomNumber = 20 + (int)(Math.random()*30);    // şifre oluşturmak için 20 ile 50 arasında random sayı üretiyoruz.
+        randomNumber = 20 + (int) (Math.random() * 30);    // şifre oluşturmak için 20 ile 50 arasında random sayı üretiyoruz.
         password = getAlphaNumeric(randomNumber);       // random sayı kadar basamaklı bir alfanumeric şifre üretiyoruz.
 
         if (!dosyami.equals("dosyagonderkontrol")) {
             //-- Yeni bir JSON Nesnesi oluşturuyoruz
             try {
                 if (veritabani.length() > 0) {                                                 // veritabanında kayıt varsa
-                    prevNesne = veritabani.getJSONObject(veritabani.length()-1);         //yeni blocktan önceki blogu nesne olarak aldık.
+                    prevNesne = veritabani.getJSONObject(veritabani.length() - 1);         //yeni blocktan önceki blogu nesne olarak aldık.
                     prevKey = prevNesne.getString("hash");                               //o nesnenin chain id sini aldık
 
                     try {                                                                      // kullanıcı verilerini şifreledik.
-                        cryptedName = AESCrypt.encrypt(encrypPass, nameSurname );
+                        cryptedName = AESCrypt.encrypt(encrypPass, nameSurname);
                         cryptedEmail = AESCrypt.encrypt(encrypPass, mail);
                         cryptedPass = AESCrypt.encrypt(encrypPass, password);
-                    }catch (GeneralSecurityException e){
+                    } catch (GeneralSecurityException e) {
                         //handle error
                     }
 
-                    addBlock(new Block(cryptedEmail, cryptedName , ipadress , prevKey));
+                    addBlock(new Block(cryptedEmail, cryptedName, ipadress, prevKey));
 
                 } else {
                     String encrypPass = "takesPass";
@@ -309,11 +373,11 @@ public class ServerService extends Service {
                         cryptedName = AESCrypt.encrypt(encrypPass, nameSurname);
                         cryptedEmail = AESCrypt.encrypt(encrypPass, mail);
                         cryptedPass = AESCrypt.encrypt(encrypPass, password);
-                    }catch (GeneralSecurityException e){
+                    } catch (GeneralSecurityException e) {
                         //handle error
                     }
 
-                    addBlock(new Block(cryptedEmail, cryptedName, ipadress , "0"));
+                    addBlock(new Block(cryptedEmail, cryptedName, ipadress, "0"));
 
                 }
             } catch (JSONException e) {
@@ -339,13 +403,13 @@ public class ServerService extends Service {
         String nonce = String.valueOf(blockchain.get(0).nonce);
 
         try {
-            yeniKayit.put("hash",hash);
-            yeniKayit.put("previousHash",previousHash);
-            yeniKayit.put("mail",mail);
-            yeniKayit.put("adsoyad",adsoyad);
-            yeniKayit.put("ipaddres",ipad);
-            yeniKayit.put("timeStamp",timeStamp);
-            yeniKayit.put("nonce",nonce);
+            yeniKayit.put("hash", hash);
+            yeniKayit.put("previousHash", previousHash);
+            yeniKayit.put("mail", mail);
+            yeniKayit.put("adsoyad", adsoyad);
+            yeniKayit.put("ipaddres", ipad);
+            yeniKayit.put("timeStamp", timeStamp);
+            yeniKayit.put("nonce", nonce);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -393,7 +457,7 @@ public class ServerService extends Service {
         m.setSubject("Uygulamamıza hoşgeldiniz.");
         m.setBody(mesaj);
 
-        if(m.send()) {
+        if (m.send()) {
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
@@ -416,30 +480,28 @@ public class ServerService extends Service {
     }
 
 
-    public void kayitTamamla(){
-        if (!dosyami.equals("dosyagonderkontrol")) {
-            try {
-                if (!fileDirectory.exists())
-                    fileDirectory.mkdir();
+    public void kayitTamamla() {
+        try {
+            if (!fileDirectory.exists())
+                fileDirectory.mkdir();
 
-                veritabani.put(yeniKayit);
-                //-- veritabani'nin son halini JSON dosyasına kaydediyoruz.
-                veritabanımız = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
-                FileOutputStream fileOutputStream = new FileOutputStream(veritabanımız);
-                OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
-                outputStreamWriter.write(veritabani.toString());
-                outputStreamWriter.close();
-                fileOutputStream.close();
+            veritabani.put(gelenVeriKontrolNesne);
 
-                dosyaGonderServisiCagir();
+            //-- veritabani'nin son halini JSON dosyasına kaydediyoruz.
+            veritabanımız = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
+            FileOutputStream fileOutputStream = new FileOutputStream(veritabanımız);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
+            outputStreamWriter.write(veritabani.toString());
+            outputStreamWriter.close();
+            fileOutputStream.close();
 
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
     @Override
     public void onDestroy() {
         // handler.removeCallbacks(sendUpdatesToUI);
@@ -452,55 +514,5 @@ public class ServerService extends Service {
                 e.printStackTrace();
             }
         }
-    }
-
-
-    public static Thread performOnBackgroundThread(final Runnable runnable) {
-        final Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    runnable.run();
-                } finally {
-
-                }
-            }
-        };
-        t.start();
-        return t;
-    }
-
-
-    public void dosyaGonderServisiCagir(){
-
-        if (!dosyami.equals("dosyagonderkontrol")) {
-            try {
-                for(int sira=0; sira<veritabani.length();sira++){
-                    girisKontrolNesne = veritabani.getJSONObject(sira);
-                    ipaddressleri = girisKontrolNesne.getString("ipaddres");
-                    if (!ipadressler.contains(ipaddressleri)) {
-                        ipadressler.add(ipaddressleri);
-                    }
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            StringBuilder sb = new StringBuilder();
-            for (String s : ipadressler)
-            {
-                sb.append(s);
-                sb.append("//");
-            }
-
-
-            Intent intent = new Intent(ServerService.this, DosyaGonderService.class);
-            intent.putExtra("dosya", veritabani.toString());
-            intent.putExtra("ipadresi", sb.toString());
-            startService(intent);
-        }
-
-
-
     }
 }

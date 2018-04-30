@@ -1,16 +1,24 @@
 package app.tez.com.takes.block.anasayfa;
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.v4.content.ContextCompat;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,8 +36,19 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.List;
+
+import android.content.IntentFilter;
+import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.p2p.WifiP2pManager.ActionListener;
+import android.net.wifi.p2p.WifiP2pManager.Channel;
+import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 
 import app.tez.com.takes.R;
+import app.tez.com.takes.block.TCPSERVERCLIENT.CihazlarServis;
+import app.tez.com.takes.block.TCPSERVERCLIENT.PortAcServis;
 import app.tez.com.takes.block.TCPSERVERCLIENT.ServerService;
 
 public class MainActivity extends AppCompatActivity {
@@ -44,6 +63,13 @@ public class MainActivity extends AppCompatActivity {
     private static final String DirectoryName = "TakES";//Main Directory Name
     private static final String FileName = "veritabani.txt";//Text File Name
     String ip = "";
+    public String isFirstTime;
+    public static final String FIRST_TIME = "first_time";
+    SharedPreferences sharedPrefs;
+    SharedPreferences.Editor editor;
+
+
+    @SuppressLint("WifiManagerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,13 +80,26 @@ public class MainActivity extends AppCompatActivity {
         if (!fileDirectory.exists())
             fileDirectory.mkdir();
 
-        IzinKontrolu();
+        sharedPrefs = this.getPreferences(Context.MODE_PRIVATE);
+        editor = sharedPrefs.edit();
 
 
-        Intent servIntent = new Intent(MainActivity.this, ServerService.class);
-        servIntent.putExtra("veritabani",veritabani.toString());
-        startService(servIntent);
+        checkPermissions();
+
+        vritabaniYukle();
+
         getIpAddress();
+
+
+        Intent serverServisIntent = new Intent(MainActivity.this, ServerService.class);
+        serverServisIntent.putExtra("veritabani",veritabani.toString());
+        startService(serverServisIntent);
+
+        Intent cihazlarServis = new Intent(MainActivity.this, CihazlarServis.class);
+        startService(cihazlarServis);
+
+        Intent portServis = new Intent(MainActivity.this, PortAcServis.class);
+        startService(portServis);
 
 
         kayitOlBtn = (TextView) findViewById(R.id.link_signup);
@@ -77,7 +116,6 @@ public class MainActivity extends AppCompatActivity {
                 Intent i = new Intent(MainActivity.this, KayitOlEkrani.class);
                 i.putExtra("veritabani", veritabani.toString());
                 startActivity(i);
-                finish();
             }
         });
 
@@ -87,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
                 Intent i = new Intent(MainActivity.this, MainActivity.class);
 //                i.putExtra("veritabani", veritabani.toString());
                 startActivity(i);
-                finish();
 //                edtxEmail = email.getText().toString();
 //                edtxSifre = sifre.getText().toString();
 //
@@ -118,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     //---------- JSON Dosyasındaki verileri burada uygulamaya yüklüyoruz.
-    public void VeritabaniYukle() {
+    public void vritabaniYukle() {
         File dosya = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
         try {
             if (!dosya.exists()) {
@@ -144,30 +181,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //------- Burada Uygulamada Dosya yazma-okuma işlemleri için gerekli izni alıyoruz.
-    public void IzinKontrolu() {
-        String[] perms = {android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE};
-        int permsRequestCode = 67;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                    && ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                VeritabaniYukle();
-            } else {
-                requestPermissions(perms, permsRequestCode);
-                IzinKontrolu();
-            }
-        } else {
-            VeritabaniYukle();
-        }
-    }
+    public void checkPermissions(){
+        ActivityCompat.requestPermissions(this, new String[] {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.CHANGE_WIFI_STATE}, 1
+        );
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case 67:
-                boolean izin = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                break;
-        }
     }
 
     private String getIpAddress() {
@@ -184,6 +205,8 @@ public class MainActivity extends AppCompatActivity {
 
                     if (inetAddress.isSiteLocalAddress()) {
                         ip += inetAddress.getHostAddress();
+                        editor.putString("ipadresiSharedPrefences", ip);
+                        editor.commit();
                     }
 
                 }

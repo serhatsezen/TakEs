@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="app.tez.com.takes">
 
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.INTERNET"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -23,8 +32,6 @@
         </activity>
         <activity android:name=".block.anasayfa.KayitOlEkrani" android:theme="@style/AppTheme.Dark"/>
 
-        <service android:name=".block.TCPSERVERCLIENT.KayitEkraniService"/>
-        <service android:name=".block.TCPSERVERCLIENT.DosyaGonderService"/>
         <service
             android:name=".block.TCPSERVERCLIENT.ServerService"
             android:enabled="true"
@@ -32,6 +39,35 @@
             <intent-filter>
                 <action android:name="app.tez.com.takes.LONGRUNSERVICE" />
             </intent-filter>
+        </service>
+        <service
+            android:name=".block.TCPSERVERCLIENT.CihazlarServis"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="app.tez.com.takes.LONGRUNSERVICE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".block.TCPSERVERCLIENT.PortAcServis"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="app.tez.com.takes.LONGRUNSERVICE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".block.TCPSERVERCLIENT.KullaniciKayitServisi"
+            android:enabled="true"
+            android:exported="true">
+        </service>
+        <service android:name=".block.TCPSERVERCLIENT.KayitTamamlaServis"
+            android:enabled="true"
+            android:exported="true">
+        </service>
+        <service android:name=".block.TCPSERVERCLIENT.DosyaGonderService"
+            android:enabled="true"
+            android:exported="true">
         </service>
     </application>
 
