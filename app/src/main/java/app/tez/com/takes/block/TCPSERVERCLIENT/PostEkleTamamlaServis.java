@@ -28,18 +28,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 
 import app.tez.com.takes.block.Block.Block;
-import app.tez.com.takes.block.SifreMailGonder.Mail;
 
 /**
- * Created by serhat on 29.04.2018.
+ * Created by serhat on 3.05.2018.
  */
 
-public class KayitTamamlaServis extends Service {
-
+public class PostEkleTamamlaServis extends Service {
     ServerSocket serverSocket;
     JSONArray veritabani;
     JSONObject prevNesne;
@@ -51,10 +48,10 @@ public class KayitTamamlaServis extends Service {
     Intent intent;
     public static final String BROADCAST_ACTION = "Hello World";
 
-    int randomNumber;
     JSONObject yeniKayit = new JSONObject();
 
-    String password, prevKey, mail, nameSurname, ipadress, cryptedName, cryptedEmail, cryptedPass, ipaddressleri;
+    String gelenDesciption, gelenAdSoyad, gelenIp, gelenImageUri, prevKey;
+    String cryptedgelenDesciption, cryptedgelenAdSoyad, cryptedgelenIp, cryptedgelenImageUri;
 
     String encrypPass = "takesPass";                            //şifreleme için key
 
@@ -64,17 +61,17 @@ public class KayitTamamlaServis extends Service {
 
     String gelenVeri;
     String[] veriParcala;
-    public String hashCozuldu = "";
-
-    public static KayitTamamlaServis kayitTamamlaServis;
-
-    public KayitTamamla kayitTamamla;
+    public String hashCozulduPost = "";
 
     public boolean blockYazildi = false;
 
-    public KayitTamamlaServis() {
-        kayitTamamlaServis = this;
-        hashCozuldu = String.valueOf(this);
+    public static PostEkleTamamlaServis postEkleTamamlaServis;
+
+    public PostEkleAsynTask postEkleAsynTask;
+
+    public PostEkleTamamlaServis() {
+        postEkleTamamlaServis = this;
+        hashCozulduPost = String.valueOf(this);
     }
 
     @Nullable
@@ -87,22 +84,22 @@ public class KayitTamamlaServis extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
         try {
-            gelenVeri = intent.getStringExtra("kayitBilgisi");
+            gelenVeri = intent.getStringExtra("postBilgileri");
             veriParcala = gelenVeri.split("/");
-            mail = veriParcala[0];
-            nameSurname = veriParcala[1];
-            ipadress = veriParcala[2];
-            hashCozuldu = "";
-
+            gelenDesciption = veriParcala[0];
+            gelenAdSoyad = veriParcala[1];
+            gelenIp = veriParcala[2];
+            gelenImageUri = veriParcala[3];
+            hashCozulduPost = "";
+            blockYazildi = false;
         } catch (Exception e) {
         }
 
         veritabaniYukle();
 
         if (blockYazildi == false) {
-            kayitTamamla = (KayitTamamla) new KayitTamamla().execute();
+            postEkleAsynTask = (PostEkleAsynTask) new PostEkleAsynTask().execute();
         }
-
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -117,20 +114,11 @@ public class KayitTamamlaServis extends Service {
     public void onStart(final Intent intent, int startId) {
     }
 
-    //    public class KayitTamamlaThread extends Thread {
-//        public void run() {
-//            try {
-//
-//            } catch (Exception e) {
-//            }
-//        }
-//    }
-
-    public class KayitTamamla extends AsyncTask {
+    public class PostEkleAsynTask extends AsyncTask {
         @Override
         protected Object doInBackground(Object... arg0) {
             if (blockYazildi == false) {
-                kayitOl();
+                postEkle();
             }
             return null;
         }
@@ -166,46 +154,37 @@ public class KayitTamamlaServis extends Service {
         }
     }
 
-    public void kayitOl() {
-        randomNumber = 20 + (int) (Math.random() * 30);    // şifre oluşturmak için 20 ile 50 arasında random sayı üretiyoruz.
-        password = getAlphaNumeric(randomNumber);       // random sayı kadar basamaklı bir alfanumeric şifre üretiyoruz.
-
+    public void postEkle() {
         //-- Yeni bir JSON Nesnesi oluşturuyoruz
         try {
             if (veritabani.length() > 0) {                                                 // veritabanında kayıt varsa
                 prevNesne = veritabani.getJSONObject(veritabani.length() - 1);         //yeni blocktan önceki blogu nesne olarak aldık.
                 prevKey = prevNesne.getString("hash");                               //o nesnenin chain id sini aldık
-                try {                                                                      // kullanıcı verilerini şifreledik.
-                    cryptedName = AESCrypt.encrypt(encrypPass, nameSurname);
-                    cryptedEmail = AESCrypt.encrypt(encrypPass, mail);
-                    cryptedPass = AESCrypt.encrypt(encrypPass, password);
-                } catch (GeneralSecurityException e) {
-                    //handle error
-                }
-                addBlock(new Block(cryptedEmail, cryptedName, ipadress, cryptedPass, prevKey));
-
+                sifrele();
+                addBlock(new Block(cryptedgelenDesciption, cryptedgelenAdSoyad, gelenIp, cryptedgelenImageUri, prevKey));
             } else {
-                String encrypPass = "takesPass";
-                try {
-                    cryptedName = AESCrypt.encrypt(encrypPass, nameSurname);
-                    cryptedEmail = AESCrypt.encrypt(encrypPass, mail);
-                    cryptedPass = AESCrypt.encrypt(encrypPass, password);
-                } catch (GeneralSecurityException e) {
-                    //handle error
-                }
-
-                addBlock(new Block(cryptedEmail, cryptedName, ipadress, cryptedPass, "0"));
+                sifrele();
+                addBlock(new Block(cryptedgelenDesciption, cryptedgelenAdSoyad, gelenIp, cryptedgelenImageUri, "0"));
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        if (hashCozuldu != "durlan") {
-            new SendMail().execute("");
+        if (hashCozulduPost != "dur") {
+            postEkleTamamla();
+        }
+    }
+
+    public void sifrele() {
+        try {                                                                      // kullanıcı verilerini şifreledik.
+            cryptedgelenDesciption = AESCrypt.encrypt(encrypPass, gelenDesciption);
+            cryptedgelenAdSoyad = AESCrypt.encrypt(encrypPass, gelenAdSoyad);
+            cryptedgelenImageUri = AESCrypt.encrypt(encrypPass, gelenImageUri);
+        } catch (GeneralSecurityException e) {
+            //handle error
         }
     }
 
     public void addBlock(Block newBlock) {
-
 
         if (blockYazildi == false) {
             newBlock.mineBlockKayit(difficulty);
@@ -213,85 +192,37 @@ public class KayitTamamlaServis extends Service {
         }
 
         blockYazildi = true;
-
-        if (hashCozuldu != "durlan") {
+        if (hashCozulduPost != "dur") {
             hashiCozdumDiyeSeslen();
         }
 
         String hash = blockchain.get(0).hash;
         String previousHash = blockchain.get(0).previousHash;
-        String mail = blockchain.get(0).mail;
+        String description = blockchain.get(0).mail;
         String adsoyad = blockchain.get(0).adsoyad;
         String ipad = blockchain.get(0).ipaddress;
         String timeStamp = String.valueOf(blockchain.get(0).timeStamp);
         String nonce = String.valueOf(blockchain.get(0).nonce);
-        String sifre = blockchain.get(0).sifre;
+        String imageUri = blockchain.get(0).sifre;
 
         try {
             yeniKayit.put("hash", hash);
             yeniKayit.put("previousHash", previousHash);
-            yeniKayit.put("mail", mail);
+            yeniKayit.put("description", description);
             yeniKayit.put("adsoyad", adsoyad);
             yeniKayit.put("ipaddres", ipad);
-            yeniKayit.put("sifre", sifre);
+            yeniKayit.put("resimAdi", imageUri);
             yeniKayit.put("timeStamp", timeStamp);
             yeniKayit.put("nonce", nonce);
             yeniKayit.put("cihazAdi", Build.MODEL);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
         blockchain.clear();
     }
 
-    public String getAlphaNumeric(int len) {
-
-        char[] ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
-
-        char[] c = new char[len];
-        SecureRandom random = new SecureRandom();
-        for (int i = 0; i < len; i++) {
-            c[i] = ch[random.nextInt(ch.length)];
-        }
-
-        return new String(c);
-    }
-
-    private class SendMail extends AsyncTask<String, String, String> {
-
-        @Override
-        protected String doInBackground(String... params) {
-            try {
-                if (hashCozuldu != "durlan") {
-                    sendMail();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    public void sendMail() throws Exception {
-        Mail m = new Mail("takesblock@gmail.com", "0123456789Sa");
-
-        String mesaj = "Uygulamaya giriş için şifreniz: \n " + password + " \n Lütfen şifrenizi saklayınız. Şifre yenileme işlemi yapılamayacaktır. Şifrenizi kaybederseniz hesabınıza erişemeyeceksiniz!";
-        String[] toArr = {mail};
-        m.setTo(toArr);
-        m.setFrom("takesblock@gmail.com");
-        m.setSubject("Uygulamamıza hoşgeldiniz.");
-        m.setBody(mesaj);
-
-        if (m.send()) {
-            kayitTamamla();
-            blockYazildi = false;
-        } else {
-
-        }
-    }
-
-    public void kayitTamamla() {
-        if (hashCozuldu != "durlan") {
+    public void postEkleTamamla() {
+        if (hashCozulduPost != "dur") {
             try {
                 if (!fileDirectory.exists())
                     fileDirectory.mkdir();
@@ -307,7 +238,7 @@ public class KayitTamamlaServis extends Service {
 
                 alinBudaDosya();
 
-                kayitTamamla.cancel(true);
+                postEkleAsynTask.cancel(true);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -331,15 +262,14 @@ public class KayitTamamlaServis extends Service {
     }
 
     public void hashiCozdumDiyeSeslen() {
-        Intent intent = new Intent(KayitTamamlaServis.this, DosyaGonderService.class);
-        intent.putExtra("benHashiCozdum", "benHashiCozdum/////" + blockchain.get(0).hash);
+        Intent intent = new Intent(PostEkleTamamlaServis.this, DosyaGonderService.class);
+        intent.putExtra("benHashiCozdumPost", "benHashiCozdumPost/////" + blockchain.get(0).ipaddress);
         startService(intent);
     }
 
     public void alinBudaDosya() {
-        Intent intent = new Intent(KayitTamamlaServis.this, DosyaGonderService.class);
+        Intent intent = new Intent(PostEkleTamamlaServis.this, DosyaGonderService.class);
         intent.putExtra("dosya", "dosya/////" + veritabani.toString());
         startService(intent);
-
     }
 }

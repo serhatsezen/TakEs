@@ -1,24 +1,21 @@
-package app.tez.com.takes.block.anasayfa;
+package app.tez.com.takes.block.KayitGiris;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import com.scottyab.aescrypt.AESCrypt;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,32 +29,26 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.security.GeneralSecurityException;
 import java.util.Enumeration;
-import java.util.List;
-
-import android.content.IntentFilter;
-import android.net.wifi.p2p.WifiP2pConfig;
-import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pManager;
-import android.net.wifi.p2p.WifiP2pManager.ActionListener;
-import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 
 import app.tez.com.takes.R;
+import app.tez.com.takes.block.MainPage.BottomBarActivity;
+import app.tez.com.takes.block.Models.OturumuAcan;
 import app.tez.com.takes.block.TCPSERVERCLIENT.CihazlarServis;
-import app.tez.com.takes.block.TCPSERVERCLIENT.PortAcServis;
 import app.tez.com.takes.block.TCPSERVERCLIENT.ServerService;
 
-public class MainActivity extends AppCompatActivity {
+public class GirisEkrani extends AppCompatActivity {
     Button girisBtn;
     TextView kayitOlBtn;
     EditText sifre, email;
     JSONArray veritabani = new JSONArray();
     JSONObject girisKontrolNesne;
-    String useremail, usersifre, edtxEmail, edtxSifre;
+    String useremail, usersifre, userAdSoyad, edtxEmail, edtxSifre;
 
     private static File fileDirectory = null;//Main Directory File
     private static final String DirectoryName = "TakES";//Main Directory Name
@@ -65,8 +56,10 @@ public class MainActivity extends AppCompatActivity {
     String ip = "";
     public String isFirstTime;
     public static final String FIRST_TIME = "first_time";
-    SharedPreferences sharedPrefs;
+    SharedPreferences myPrefs;
     SharedPreferences.Editor editor;
+    String decryptMail, decryptSifre;
+    String password = "takesPass";
 
 
     @SuppressLint("WifiManagerLeak")
@@ -80,8 +73,8 @@ public class MainActivity extends AppCompatActivity {
         if (!fileDirectory.exists())
             fileDirectory.mkdir();
 
-        sharedPrefs = this.getPreferences(Context.MODE_PRIVATE);
-        editor = sharedPrefs.edit();
+        myPrefs = this.getSharedPreferences("myPrefs", MODE_WORLD_READABLE);
+        editor = myPrefs.edit();
 
 
         checkPermissions();
@@ -90,16 +83,15 @@ public class MainActivity extends AppCompatActivity {
 
         getIpAddress();
 
-
-        Intent serverServisIntent = new Intent(MainActivity.this, ServerService.class);
-        serverServisIntent.putExtra("veritabani",veritabani.toString());
+        Intent serverServisIntent = new Intent(GirisEkrani.this, ServerService.class);
+        serverServisIntent.putExtra("veritabani", veritabani.toString());
         startService(serverServisIntent);
 
-        Intent cihazlarServis = new Intent(MainActivity.this, CihazlarServis.class);
+        Intent cihazlarServis = new Intent(GirisEkrani.this, CihazlarServis.class);
         startService(cihazlarServis);
-
-        Intent portServis = new Intent(MainActivity.this, PortAcServis.class);
-        startService(portServis);
+//
+//        Intent portServis = new Intent(GirisEkrani.this, PortAcServis.class);
+//        startService(portServis);
 
 
         kayitOlBtn = (TextView) findViewById(R.id.link_signup);
@@ -108,12 +100,12 @@ public class MainActivity extends AppCompatActivity {
         girisBtn = (Button) findViewById(R.id.btn_login);
 
         email.setText("serhattsezen@gmail.com");
-        sifre.setText("UPVaWMNqSII6aigGpWv96W");
+        sifre.setText("srNsJfsW3cZCkfxhpEThx3N27kLK2cSqaW6E7m2Aij");
 
         kayitOlBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(MainActivity.this, KayitOlEkrani.class);
+                Intent i = new Intent(GirisEkrani.this, KayitOlEkrani.class);
                 i.putExtra("veritabani", veritabani.toString());
                 startActivity(i);
             }
@@ -122,37 +114,54 @@ public class MainActivity extends AppCompatActivity {
         girisBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent i = new Intent(MainActivity.this, MainActivity.class);
-//                i.putExtra("veritabani", veritabani.toString());
-                startActivity(i);
-//                edtxEmail = email.getText().toString();
-//                edtxSifre = sifre.getText().toString();
-//
-//                String password = "takesPass";
-//
-//                try {
-//                    for(int sira=0; sira<veritabani.length();sira++){
-//                        girisKontrolNesne = veritabani.getJSONObject(sira);
-//                        useremail = girisKontrolNesne.getString("email");
-//                        usersifre = girisKontrolNesne.getString("sifre");
-//                        String decryptMail = AESCrypt.decrypt(password, useremail);
-//                        String decryptSifre = AESCrypt.decrypt(password, usersifre);
-//
-//                        if (decryptMail.equals(edtxEmail) && decryptSifre.equals(edtxSifre)) {
-//
-//                        }
-//                    }
-//                } catch (JSONException e) {
-//                    e.printStackTrace();
-//                } catch (GeneralSecurityException e) {
-//                    //handle error - could be due to incorrect password or tampered encryptedMsg
-//                }
+                vritabaniYukle();
+
+                edtxEmail = email.getText().toString();
+                edtxSifre = sifre.getText().toString();
+
+                try {
+                    for (int sira = 0; sira < veritabani.length(); sira++) {
+                        girisKontrolNesne = veritabani.getJSONObject(sira);
+                        try {
+                            useremail = girisKontrolNesne.getString("mail");
+                            usersifre = girisKontrolNesne.getString("sifre");
+                            decryptMail = AESCrypt.decrypt(password, useremail);
+                            decryptSifre = AESCrypt.decrypt(password, usersifre);
+                        } catch (Exception e) {
+
+                        }
+                        userAdSoyad = girisKontrolNesne.getString("adsoyad");
+
+                        String decryptAdSoyad = AESCrypt.decrypt(password, userAdSoyad);
+
+                        if (decryptMail.equals(edtxEmail) && decryptSifre.equals(edtxSifre) && decryptMail != null && decryptSifre != null) {
+
+                            OturumuAcan oturumuAcan = new OturumuAcan();
+                            oturumuAcan.setAdsoyad(decryptAdSoyad);
+                            oturumuAcan.setEmail(decryptMail);
+                            oturumuAcan.setFromIP(ip);
+
+                            String oturmuAcan = decryptAdSoyad + "//" + decryptMail + "//" + ip;
+
+                            editor.putString("OturumuAcan", oturmuAcan);
+                            editor.commit();
+
+                            Intent i = new Intent(GirisEkrani.this, BottomBarActivity.class);
+                            i.putExtra("veritabani", veritabani.toString());
+                            i.putExtra("OturumuAcan", oturumuAcan);
+                            startActivity(i);
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } catch (GeneralSecurityException e) {
+                    //handle error - could be due to incorrect password or tampered encryptedMsg
+                }
 
             }
         });
 
     }
-
 
     //---------- JSON Dosyasındaki verileri burada uygulamaya yüklüyoruz.
     public void vritabaniYukle() {
@@ -181,12 +190,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //------- Burada Uygulamada Dosya yazma-okuma işlemleri için gerekli izni alıyoruz.
-    public void checkPermissions(){
-        ActivityCompat.requestPermissions(this, new String[] {
+    public void checkPermissions() {
+        ActivityCompat.requestPermissions(this, new String[]{
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.ACCESS_WIFI_STATE,
-                Manifest.permission.CHANGE_WIFI_STATE}, 1
+                Manifest.permission.CHANGE_WIFI_STATE,
+                Manifest.permission.CAMERA}, 1
         );
 
     }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/primary_dark">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:text="Uygulamamıza hoşgeldiniz. Öncelikle bir kaç ayarlama yapılması gerekiyor bir süre sizi bekleteceğiz. Ortalama 5 dakika sürecektir. Bu sürede uygulamayı kapatmadan arka plana atabilirsiniz."
+        android:textColor="@color/white_greyish"
+        android:textSize="20sp"
+        android:id="@+id/yazi"
+        android:padding="10dp"/>
+
+    <android.support.v4.widget.ContentLoadingProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_below="@+id/yazi"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="43dp" />
+</RelativeLayout>

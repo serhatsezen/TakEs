@@ -5,7 +5,8 @@ package app.tez.com.takes.block;
  */
 
 import java.util.ArrayList;
-import com.google.gson.GsonBuilder;
+
+import app.tez.com.takes.block.Block.Block;
 
 public class NoobChain {
 
@@ -41,7 +42,7 @@ public class NoobChain {
             currentBlock = blockchain.get(i);
             previousBlock = blockchain.get(i-1);
             //compare registered hash and calculated hash:
-            if(!currentBlock.hash.equals(currentBlock.calculateHash()) ){
+            if(!currentBlock.hash.equals(currentBlock.calculateHashKayit()) ){
                 System.out.println("Current Hashes not equal");
                 return false;
             }
@@ -60,8 +61,4 @@ public class NoobChain {
         return true;
     }
 
-    public static void addBlock(Block newBlock) {
-        newBlock.mineBlock(difficulty);
-        blockchain.add(newBlock);
-    }
 }

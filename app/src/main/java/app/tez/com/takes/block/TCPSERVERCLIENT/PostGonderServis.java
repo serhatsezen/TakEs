@@ -20,19 +20,18 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Type;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import app.tez.com.takes.block.Models.DeviceDTO;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-
 /**
- * Created by serhat on 28.04.2018.
+ * Created by serhat on 3.05.2018.
  */
 
-public class KullaniciKayitServisi extends Service {
+public class PostGonderServis extends Service {
     Intent intent;
     public static final String BROADCAST_ACTION = "BroadCastAction";
     static final int SocketServerPORT = 8080;
@@ -40,10 +39,10 @@ public class KullaniciKayitServisi extends Service {
     SharedPreferences sharedPrefs;
     public static final String CIHAZLAR = "cihazlarshared";
 
-    String kayitOlanBilgileri, socketIp, ip;
+    String postBilgileri, socketIp, ip;
 
     ClientRxThread clientRxThread;
-    public boolean kayitServisiBasladi = false;
+    public boolean postEkleServisiBasladi = false;
 
     @Nullable
     @Override
@@ -56,8 +55,8 @@ public class KullaniciKayitServisi extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         try {
-            kayitOlanBilgileri = intent.getStringExtra("kayitOlanBilgileri");
-            sharedPrefs = PreferenceManager.getDefaultSharedPreferences(KullaniciKayitServisi.this);
+            postBilgileri = intent.getStringExtra("postBilgileri");
+            sharedPrefs = PreferenceManager.getDefaultSharedPreferences(PostGonderServis.this);
 
             ip = sharedPrefs.getString("ipadresiSharedPrefences", "192.168.1.0");
 
@@ -128,14 +127,13 @@ public class KullaniciKayitServisi extends Service {
                     for (int i = 0; i < cihazlar.size(); i++) {
                         try {
                             socketIp = String.valueOf(cihazlar.get(i).getIp());
-
                             if (!socketIp.equals(ip)) {
                                 s = new Socket(socketIp, SocketServerPORT);
 
                                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
                                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
                                 //send output msg
-                                out.write("kayit/////" + kayitOlanBilgileri);
+                                out.write("postEkle/////" + postBilgileri);
                                 out.flush();
                                 //accept server response
                                 out.close();
@@ -145,7 +143,6 @@ public class KullaniciKayitServisi extends Service {
                         } catch (UnknownHostException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
-                            final String eMsg = "Something wrong: " + e.getMessage();
                             e.printStackTrace();
                         }
                     }
@@ -153,7 +150,7 @@ public class KullaniciKayitServisi extends Service {
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(KullaniciKayitServisi.this,
+                            Toast.makeText(PostGonderServis.this,
                                     "cihaz yok",
                                     Toast.LENGTH_LONG).show();
                         }

@@ -1,0 +1,97 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_height="match_parent"
+    tools:context="com.team3s.lostpropertyse.MainPage.CategorySelect">
+    <android.support.design.widget.AppBarLayout
+        android:id="@+id/kategoriBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+           <TextView
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:text="Kategoriler"
+               android:layout_centerHorizontal="true"
+               android:textSize="28sp"
+               android:padding="10dp"
+               android:id="@+id/textView" />
+
+            <TextView
+                android:id="@+id/categoryAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="13dp"
+                android:background="@drawable/pinkgreen"
+                android:gravity="right"
+                android:padding="10dp"
+                android:text="Hepsi"
+                android:textColor="@color/white_greyish"
+                android:textSize="15sp"
+                tools:ignore="RtlCompat" />
+        </RelativeLayout>
+    </android.support.design.widget.AppBarLayout>
+
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:id="@+id/gridLinear"
+        android:layout_below="@+id/findappBarLayout">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:id="@+id/selectedCategory"
+                android:layout_toStartOf="@+id/txtategory"
+                android:gravity="left"
+                android:padding="10dp"
+                android:text="Kategori"
+                android:textColor="#142634"
+                android:textSize="15sp"
+                tools:ignore="RtlCompat" />
+
+            <TextView
+                android:id="@+id/txtategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:gravity="center"
+                android:padding="10dp"
+                android:text="Kategorisi seçildi!"
+                android:textColor="#142634"
+                android:textSize="15sp"
+                tools:ignore="RtlCompat" />
+        </RelativeLayout>
+
+        <GridView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/categorylist"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:columnWidth="90dp"
+            android:numColumns="auto_fit"
+            android:verticalSpacing="10dp"
+            android:horizontalSpacing="10dp"
+            android:padding="5dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center"
+            />
+
+
+    </LinearLayout>
+
+</LinearLayout>

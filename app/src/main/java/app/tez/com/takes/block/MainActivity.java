@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import app.tez.com.takes.R;
+import app.tez.com.takes.block.KayitGiris.GirisEkrani;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
@@ -118,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.socket:
                 break;
             case R.id.json:
-                Intent json = new Intent(MainActivity.this, app.tez.com.takes.block.anasayfa.MainActivity.class);
+                Intent json = new Intent(MainActivity.this, GirisEkrani.class);
                 startActivity(json);
         }
     }

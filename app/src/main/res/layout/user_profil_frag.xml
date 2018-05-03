@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+    <android.support.design.widget.CoordinatorLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <android.support.design.widget.AppBarLayout
+            android:id="@+id/appBarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+            <android.support.design.widget.CollapsingToolbarLayout
+                android:id="@+id/collapsing_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="229dp"
+                app:contentScrim="?attr/colorPrimary"
+                app:layout_scrollFlags="scroll|exitUntilCollapsed">
+
+                <RelativeLayout
+                    android:id="@+id/vUserProfileRoot"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/colorPrimary"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical"
+                    android:weightSum="1"
+                    app:layout_collapseMode="parallax">
+
+                    <ImageView
+                        android:id="@+id/imageView3"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_alignBottom="@+id/lostrela"
+                        android:layout_alignParentStart="true"
+                        android:layout_alignParentTop="true"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/back"
+                        tools:ignore="UnknownId" />
+
+                    <View
+                        android:id="@+id/backgroundView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#80232121" />
+
+                    <com.github.siyamed.shapeimageview.CircularImageView
+                        android:id="@+id/ivUserProfilePhoto"
+                        android:layout_width="98dp"
+                        android:layout_height="98dp"
+                        android:layout_alignParentTop="true"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginRight="16dp"
+                        android:layout_marginTop="43dp"
+                        android:src="@drawable/default_avatar"
+                        app:siBorderColor="@color/black"
+                        app:siBorderWidth="9dp" />
+
+                    <ImageButton
+                        android:id="@+id/dm_imgBtn_another"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBottom="@+id/ivUserProfilePhoto"
+                        android:layout_marginBottom="28dp"
+                        android:layout_marginStart="13dp"
+                        android:layout_toEndOf="@+id/ivUserProfilePhoto"
+                        android:background="@null"
+                        app:srcCompat="@drawable/messagebtn"
+                        tools:ignore="RtlCompat" />
+
+                    <ImageButton
+                        android:id="@+id/edit_prof_btn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBottom="@+id/dm_imgBtn_another"
+                        android:layout_marginEnd="26dp"
+                        android:layout_toStartOf="@+id/ivUserProfilePhoto"
+                        android:background="@null"
+                        app:srcCompat="@drawable/settingsbtn"
+                        tools:ignore="RtlCompat" />
+
+
+                    <TextView
+                        android:id="@+id/fullnameuser"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/ivUserProfilePhoto"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="Aydın Serhat"
+                        android:textColor="#ffffff"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:id="@+id/usernameprof"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/fullnameuser"
+                        android:layout_alignStart="@+id/edit_prof_btn"
+                        android:layout_marginStart="21dp"
+                        android:maxLines="1"
+                        android:padding="4dp"
+                        android:text="\@serhatsezn"
+                        android:textColor="#bbbbbb"
+                        android:textSize="12sp"
+                        tools:ignore="RtlCompat" />
+
+                    <TextView
+                        android:id="@+id/city"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignEnd="@+id/dm_imgBtn_another"
+                        android:layout_below="@+id/fullnameuser"
+                        android:layout_toEndOf="@+id/usernameprof"
+                        android:maxLines="1"
+                        android:padding="4dp"
+                        android:text="Eskişehir"
+                        android:textColor="#ffffff"
+                        android:textSize="12sp"
+                        tools:ignore="RtlCompat" />
+                </RelativeLayout>
+            </android.support.design.widget.CollapsingToolbarLayout>
+            <RelativeLayout
+                    android:id="@+id/tlUserProfileTabs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentStart="true"
+                tools:ignore="RtlCompat">
+                <android.support.design.widget.TabLayout
+                    android:id="@+id/result_tabs"
+                    app:tabTextColor="@color/white"
+                    app:tabSelectedTextColor="@color/white_greyish"
+                    app:tabIndicatorColor="@color/white_greyish"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:tabMode="fixed"
+                    app:tabGravity="fill"
+                    android:foregroundGravity="center"/>
+
+                </RelativeLayout>
+        </android.support.design.widget.AppBarLayout>
+        <android.support.v4.view.ViewPager
+            android:id="@+id/viewpager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+
+    </android.support.design.widget.CoordinatorLayout>
+
+    <LinearLayout
+        android:id="@+id/another_user_frag"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:orientation="vertical"
+        tools:ignore="RtlCompat" />
+</RelativeLayout>

@@ -61,11 +61,8 @@ public class DosyaGonderService extends Service {
     JSONArray veritabani = new JSONArray();
     JSONObject girisKontrolNesne;
 
-    JSONObject prevNesne;
 
     String gonderilecekDosya,socketIp,kendiIpAdresi,veritabanindanIpAdresi;
-    String[] parts;
-    String gonderildi = "";
 
     SharedPreferences sharedPrefs;
     public static final String CIHAZLAR = "cihazlarshared";
@@ -75,15 +72,54 @@ public class DosyaGonderService extends Service {
     public IBinder onBind(Intent ıntent) {
         return null;
     }
-//
-//    @Override
-//    public int onStartCommand(Intent intent, int flags, int startId) {
-//
-//
-//
-//
-//        return super.onStartCommand(intent, flags, startId);
-//    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
+        try {
+            if (intent.getStringExtra("benHashiCozdum") != null) {
+                gonderilecekDosya = intent.getStringExtra("benHashiCozdum");
+            } else {}
+
+        } catch (Exception e) {
+        }
+        try {
+            if (intent.getStringExtra("benHashiCozdumPost") != null) {
+                gonderilecekDosya = intent.getStringExtra("benHashiCozdumPost");
+            }
+        } catch (Exception e) {
+        }
+        try {
+            if (intent.getStringExtra("dosya") != null) {
+                gonderilecekDosya = intent.getStringExtra("dosya");
+            } else {}
+        } catch (Exception e) {
+        }
+
+
+        if (gonderilecekDosya == null) {
+            gonderilecekDosya = "";
+        }
+
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(DosyaGonderService.this);
+
+        kendiIpAdresi = sharedPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
+
+        String[] parts = kendiIpAdresi.split("\\.");
+        String part1 = parts[0];
+        String part2 = parts[1];
+        String part3 = parts[2];
+
+        socketIp = part1 + "." + part2 + "." + part3 + ".";
+
+        ClientRxThread clientRxThread =
+                new ClientRxThread(
+                        socketIp,
+                        SocketServerPORT);
+        clientRxThread.start();
+
+        return super.onStartCommand(intent, flags, startId);
+    }
 
     @Override
     public void onCreate()
@@ -97,41 +133,6 @@ public class DosyaGonderService extends Service {
     public void onStart(Intent intent, int startId)
     {
 
-        if (intent.getStringExtra("benHashiCozdum") != null) {
-            gonderilecekDosya = intent.getStringExtra("benHashiCozdum");
-        } else {
-
-        }
-
-        if (intent.getStringExtra("dosya") != null) {
-            gonderilecekDosya = intent.getStringExtra("dosya");
-        } else {
-
-        }
-
-        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(DosyaGonderService.this);
-
-        kendiIpAdresi = sharedPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
-
-
-        fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
-
-        veritabaniYukle();
-
-        String[] parts = kendiIpAdresi.split("\\.");
-        String part1 = parts[0];
-        String part2 = parts[1];
-        String part3 = parts[2];
-
-        socketIp = part1 + "." + part2 + "." + part3 + ".";
-
-
-        ClientRxThread clientRxThread =
-                new ClientRxThread(
-                        socketIp,
-                        SocketServerPORT);
-
-        clientRxThread.start();
 
     }
 
@@ -160,8 +161,6 @@ public class DosyaGonderService extends Service {
             e.printStackTrace();
         }
     }
-
-
 
     public class ClientRxThread extends Thread {
         String dstAddress;
@@ -205,14 +204,7 @@ public class DosyaGonderService extends Service {
                         socketIp = String.valueOf(cihazlar.get(i).getIp());
 
                         if (!socketIp.equals(kendiIpAdresi)) {
-                            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(DosyaGonderService.this,
-                                            "Dosya Gonder Servisi" + socketIp,
-                                            Toast.LENGTH_LONG).show();
-                                }
-                            });
+
                             s = new Socket(socketIp, SocketServerPORT);
 
                             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -220,33 +212,19 @@ public class DosyaGonderService extends Service {
                             //send output msg
                             if (gonderilecekDosya.contains("benHashiCozdum")) {
                                 out.write(gonderilecekDosya);
-                                out.flush();
-                                out.close();
-                                //close connection
-                                s.close();
-                            } else if (gonderilecekDosya.contains("dosya")) {
-//                                parts = gonderilecekDosya.split("/////");
-//                                gonderilecekDosya = parts[1];
-
+                            } else if (gonderilecekDosya.contains("benHashiCozdumPost")) {
                                 out.write(gonderilecekDosya);
-                                out.flush();
-                                out.close();
-                                //close connection
-                                s.close();
+                            } else if (gonderilecekDosya.contains("dosya")) {
+                                out.write(gonderilecekDosya);
                             }
+                            out.flush();
+                            out.close();
+                            //close connection
+                            s.close();
                         }
                     } catch (UnknownHostException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
-                        final String eMsg = "Something wrong: " + e.getMessage();
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(DosyaGonderService.this,
-                                        eMsg,
-                                        Toast.LENGTH_LONG).show();
-                            }
-                        });
                         e.printStackTrace();
                     }
                 }
@@ -265,39 +243,11 @@ public class DosyaGonderService extends Service {
         }
     }
 
-    private String getIpAddress() {
-        try {
-            Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
-                    .getNetworkInterfaces();
-            while (enumNetworkInterfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = enumNetworkInterfaces
-                        .nextElement();
-                Enumeration<InetAddress> enumInetAddress = networkInterface
-                        .getInetAddresses();
-                while (enumInetAddress.hasMoreElements()) {
-                    InetAddress inetAddress = enumInetAddress.nextElement();
-
-                    if (inetAddress.isSiteLocalAddress()) {
-                        kendiIpAdresi += inetAddress.getHostAddress();
-                    }
-                }
-            }
-
-        } catch (SocketException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            kendiIpAdresi += "Something Wrong! " + e.toString() + "\n";
-        }
-
-        return kendiIpAdresi;
-    }
-
     @Override
     public void onDestroy() {
         // handler.removeCallbacks(sendUpdatesToUI);
         super.onDestroy();
         Log.v("STOP_SERVICE", "DONE");
-        Toast.makeText(DosyaGonderService.this,"CihazlarServis destroy", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
 
     }
 

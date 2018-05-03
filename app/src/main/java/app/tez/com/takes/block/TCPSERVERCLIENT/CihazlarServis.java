@@ -18,10 +18,14 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -43,9 +47,8 @@ public class CihazlarServis extends Service {
 
     public static ArrayList<DeviceDTO> cihazlar = new ArrayList<DeviceDTO>();
 
-
     static final int SocketServerPORT = 8080;
-    String ipadresi,arananipadresleri,olusanIpAdresi;
+    String ipadresi, arananipadresleri, olusanIpAdresi;
 
     public static final String CIHAZLAR = "cihazlarshared";
     SharedPreferences sharedPrefs;
@@ -59,28 +62,20 @@ public class CihazlarServis extends Service {
 
     @SuppressLint("MissingPermission")
     @Override
-    public void onStart(Intent intent, int startId)
-    {
-
-
+    public void onStart(Intent intent, int startId) {
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(CihazlarServis.this);
         editor = sharedPrefs.edit();
 
-        if (sharedPrefs.getString("firstTime","firstTime") == "firstTime") {
+        if (sharedPrefs.getString("firstTime", "firstTime") == "firstTime") {
             getIpAddress();
         } else {
-            ipadresi = sharedPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
-            Toast.makeText(CihazlarServis.this,ipadresi + " kullanici", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-
+            ipadresi = sharedPrefs.getString("ipadresiSharedPrefences", "192.168.1.0");
         }
-
-
 
         String[] parts = ipadresi.split("\\.");
         String part1 = parts[0];
@@ -89,7 +84,6 @@ public class CihazlarServis extends Service {
 
         arananipadresleri = part1 + "." + part2 + "." + part3 + ".";
 
-        Toast.makeText(CihazlarServis.this,arananipadresleri, Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
 
         ClientRxThread clientRxThread =
                 new ClientRxThread(
@@ -101,14 +95,11 @@ public class CihazlarServis extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-
     @Override
     public void onDestroy() {
         // handler.removeCallbacks(sendUpdatesToUI);
         super.onDestroy();
         Log.v("STOP_SERVICE", "DONE");
-        Toast.makeText(CihazlarServis.this,"CihazlarServis destroy", Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-
     }
 
     private class ClientRxThread extends Thread {
@@ -134,51 +125,19 @@ public class CihazlarServis extends Service {
                         if (!cihazlar.contains(deviceDTO)) {
                             cihazlar.add(deviceDTO);
                         }
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(CihazlarServis.this, "Başarılı" + olusanIpAdresi, Toast.LENGTH_SHORT).show();//Show toast if SD Card is not mounted
-                            }
-                        });
-
                         saveArrayList(cihazlar, CIHAZLAR);
+
+                        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                        //send output msg
+                        out.write("cihazlaraEkleBeni/////" + ipadresi);
+                        out.flush();
+                        out.close();
+                        //close connection
                         socket.close();
-
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(CihazlarServis.this,
-                                        "Finished",
-                                        Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-
                     }
                 } catch (IOException e) {
-
                     e.printStackTrace();
-
-                    final String eMsg = "Something wrong: " + e.getMessage();
-                    final int finalI = i;
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (finalI == 5 || finalI == 50 || finalI == 100 || finalI == 150 || finalI == 200 || finalI == 255) {
-                                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(CihazlarServis.this,
-                                                eMsg,
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                });
-                            }
-
-                        }
-                    });
-
-
                 } finally {
                     if (socket != null) {
                         try {
@@ -193,14 +152,15 @@ public class CihazlarServis extends Service {
         }
     }
 
-    public void saveArrayList(ArrayList<DeviceDTO> list, String key){
+    public void saveArrayList(ArrayList<DeviceDTO> list, String key) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(CihazlarServis.this);
         SharedPreferences.Editor editor = prefs.edit();
         Gson gson = new Gson();
         String json = gson.toJson(list);
         editor.putString(key, json);
-        editor.apply();     // This line is IMPORTANT !!!
+        editor.apply();
     }
+
     private String getIpAddress() {
         try {
             Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
@@ -216,11 +176,8 @@ public class CihazlarServis extends Service {
                     if (inetAddress.isSiteLocalAddress()) {
                         ipadresi += inetAddress.getHostAddress();
                     }
-
                 }
-
             }
-
         } catch (SocketException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -230,9 +187,6 @@ public class CihazlarServis extends Service {
         if (ipadresi.contains("null")) {
             String[] nummcikart = ipadresi.split("null");
             ipadresi = nummcikart[1];
-            Toast.makeText(CihazlarServis.this,
-                    ipadresi+ "  Null YOK",
-                    Toast.LENGTH_LONG).show();
         }
         editor.putString("ipadresiSharedPrefences", ipadresi);
         editor.putString("firstTime", "2oldu");
