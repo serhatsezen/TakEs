@@ -1,5 +1,6 @@
 package app.tez.com.takes.block.MainPage;
 
+import android.Manifest;
 import android.Manifest.permission;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
@@ -48,7 +49,6 @@ public class BottomBarActivity extends AppCompatActivity {
     private List<UsersProfiFrag> fragmentsPro = new ArrayList<>(1);
 
     protected void onStart() {
-        checkPermissions();
         super.onStart();
     }
 
@@ -57,10 +57,6 @@ public class BottomBarActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bottom_bar);
         preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-
-        Intent intent = getIntent();
-
-        oturumuAcan = (OturumuAcan) intent.getSerializableExtra("OturumuAcan");
 
         bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_nav);
 
@@ -74,7 +70,6 @@ public class BottomBarActivity extends AppCompatActivity {
                                 return true;
                             case R.id.action_bottombar_share:
                                 Intent shareint = new Intent(BottomBarActivity.this, ShareActivity.class);
-                                shareint.putExtra("OturumuAcan", oturumuAcan);
                                 startActivity(shareint);
                                 return true;
                             case R.id.action_bottombar_profil:
@@ -148,15 +143,5 @@ public class BottomBarActivity extends AppCompatActivity {
             return true;
         }
         return super.onKeyDown(keyCode, event);
-    }
-
-
-    // API 23 ve üzeri için gerekli.
-    public void checkPermissions() {
-        ActivityCompat.requestPermissions(this, new String[]{
-                permission.ACCESS_COARSE_LOCATION,
-                permission.ACCESS_FINE_LOCATION,
-                permission.WRITE_EXTERNAL_STORAGE}, 1
-        );
     }
 }

@@ -124,7 +124,7 @@ public class KullaniciKayitServisi extends Service {
                 cihazlar = gson.fromJson(json, type);
 
 
-                if (cihazlar.size() > 0) {
+                if (cihazlar != null && cihazlar.size() > 0) {
                     for (int i = 0; i < cihazlar.size(); i++) {
                         try {
                             socketIp = String.valueOf(cihazlar.get(i).getIp());

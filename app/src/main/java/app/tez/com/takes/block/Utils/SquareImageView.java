@@ -1,4 +1,4 @@
-package app.tez.com.takes.block;
+package app.tez.com.takes.block.Utils;
 
 import android.content.Context;
 import android.support.v7.widget.AppCompatImageView;

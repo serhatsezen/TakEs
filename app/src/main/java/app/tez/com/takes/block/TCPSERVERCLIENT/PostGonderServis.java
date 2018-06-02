@@ -2,13 +2,22 @@ package app.tez.com.takes.block.TCPSERVERCLIENT;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.util.Base64;
+import android.util.Log;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -16,15 +25,24 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import app.tez.com.takes.R;
 import app.tez.com.takes.block.Models.DeviceDTO;
 
 /**
@@ -44,6 +62,11 @@ public class PostGonderServis extends Service {
     ClientRxThread clientRxThread;
     public boolean postEkleServisiBasladi = false;
 
+    Uri imageUri;
+    String imgUrl;
+
+    byte[] array;
+
     @Nullable
     @Override
     public IBinder onBind(Intent ıntent) {
@@ -56,7 +79,10 @@ public class PostGonderServis extends Service {
 
         try {
             postBilgileri = intent.getStringExtra("postBilgileri");
+
             sharedPrefs = PreferenceManager.getDefaultSharedPreferences(PostGonderServis.this);
+//            String postBilgileri = description + "/" + userAdSoyad + "/" + userIpAdresi + "/" + imageUri;
+
 
             ip = sharedPrefs.getString("ipadresiSharedPrefences", "192.168.1.0");
 
@@ -122,9 +148,9 @@ public class PostGonderServis extends Service {
                 }.getType();
                 cihazlar = gson.fromJson(json, type);
 
-
                 if (cihazlar.size() > 0) {
                     for (int i = 0; i < cihazlar.size(); i++) {
+                        socketIp = String.valueOf(cihazlar.get(i).getIp());
                         try {
                             socketIp = String.valueOf(cihazlar.get(i).getIp());
                             if (!socketIp.equals(ip)) {
@@ -161,4 +187,21 @@ public class PostGonderServis extends Service {
 
         }
     }
+
+    public static boolean copyFile(InputStream inputStream, OutputStream out) {
+        byte buf[] = new byte[1024];
+        int len;
+        try {
+            while ((len = inputStream.read(buf)) != -1) {
+                out.write(buf, 0, len);
+            }
+            out.close();
+            inputStream.close();
+        } catch (IOException e) {
+            Log.d("DDDDX", e.toString());
+            return false;
+        }
+        return true;
+    }
+
 }

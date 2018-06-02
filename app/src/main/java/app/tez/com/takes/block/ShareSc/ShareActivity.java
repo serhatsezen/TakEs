@@ -3,6 +3,7 @@ package app.tez.com.takes.block.ShareSc;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,14 +12,11 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 
 import app.tez.com.takes.R;
 import app.tez.com.takes.block.MainPage.BottomBarActivity;
-import app.tez.com.takes.block.Models.OturumuAcan;
-import app.tez.com.takes.block.Permissions;
-import app.tez.com.takes.block.SectionsPagerAdapter;
+import app.tez.com.takes.block.Utils.Permissions;
+import app.tez.com.takes.block.Utils.SectionsPagerAdapter;
 
 
 public class ShareActivity extends AppCompatActivity {
@@ -33,7 +31,10 @@ public class ShareActivity extends AppCompatActivity {
 
     private Context mContext = ShareActivity.this;
 
-    OturumuAcan oturumuAcan;
+
+    SharedPreferences myPrefs;
+    String oturumuAcan;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -43,7 +44,10 @@ public class ShareActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
 
-        oturumuAcan = (OturumuAcan) intent.getSerializableExtra("OturumuAcan");
+        myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
+
+        oturumuAcan = myPrefs.getString("OturumuAcan", "Hepsi");
+
 
         if(checkPermissionsArray(Permissions.PERMISSIONS)){
             setupViewPager();

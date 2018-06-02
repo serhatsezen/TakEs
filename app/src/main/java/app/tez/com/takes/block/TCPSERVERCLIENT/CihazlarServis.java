@@ -91,6 +91,14 @@ public class CihazlarServis extends Service {
                         SocketServerPORT);
 
         clientRxThread.start();
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(CihazlarServis.this,
+                        "IPADDRESS/////" + ipadresi,
+                        Toast.LENGTH_LONG).show();
+            }
+        });
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -114,7 +122,7 @@ public class CihazlarServis extends Service {
         @Override
         public void run() {
             Socket socket = null;
-            for (int i = 18; i <= 255; i++) {
+            for (int i = 0; i <= 255; i++) {
                 olusanIpAdresi = arananipadresleri + i;
                 try {
                     if ((!ipadresi.equals(olusanIpAdresi))) {

@@ -5,22 +5,11 @@
     android:id="@+id/relativeLayLost_Main"
     android:background="@color/white_greyish"
     tools:context="com.team3s.lostpropertyse.MainPage.FindMainFrag">
-    <android.support.design.widget.AppBarLayout
-        android:id="@+id/LostappBarLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <include
-            android:id="@+id/toolbar"
-            layout="@layout/lost_feed_toolbar" />
-    </android.support.design.widget.AppBarLayout>
-
     <FrameLayout
         android:id="@+id/lostmainfrag"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"
-        android:layout_below="@+id/LostappBarLayout"
         android:background="@color/white_greyish"
         tools:ignore="RtlCompat">
 
@@ -38,7 +27,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"
-        android:layout_below="@+id/LostappBarLayout"
+        android:layout_below="@+id/lostmainfrag"
         android:orientation="vertical"
         tools:ignore="RtlCompat" />
 </RelativeLayout>

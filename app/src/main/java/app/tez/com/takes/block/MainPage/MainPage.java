@@ -93,7 +93,6 @@ public class  MainPage extends Fragment {
     private void setupViewPager(ViewPager viewPager) {
 
         Adapter adapter = new Adapter(getChildFragmentManager());
-        adapter.addFragment(new CategorySelect(), "Kategoriler");
         adapter.addFragment(new AnaSayfa(), "Kayıp Eşyalar");
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(1);

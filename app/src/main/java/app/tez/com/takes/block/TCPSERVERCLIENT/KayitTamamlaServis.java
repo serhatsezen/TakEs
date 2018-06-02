@@ -3,6 +3,7 @@ package app.tez.com.takes.block.TCPSERVERCLIENT;
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
@@ -43,7 +44,12 @@ public class KayitTamamlaServis extends Service {
     ServerSocket serverSocket;
     JSONArray veritabani;
     JSONObject prevNesne;
+    String type, oturumuAcan;
 
+    int sayi = 0;
+    SharedPreferences myPrefs;
+
+    int difficulty = 2;
     private static File fileDirectory = null;//Main Directory File
     private static final String DirectoryName = "TakES";//Main Directory Name
     private static final String FileName = "veritabani.txt";//Text File Name
@@ -59,7 +65,7 @@ public class KayitTamamlaServis extends Service {
     String encrypPass = "takesPass";                            //şifreleme için key
 
     File veritabanımız;
-    public static int difficulty = 5;
+
     public static ArrayList<Block> blockchain = new ArrayList<Block>();
 
     String gelenVeri;
@@ -71,6 +77,9 @@ public class KayitTamamlaServis extends Service {
     public KayitTamamla kayitTamamla;
 
     public boolean blockYazildi = false;
+
+
+    String oturumuacanmail = " ";
 
     public KayitTamamlaServis() {
         kayitTamamlaServis = this;
@@ -85,6 +94,11 @@ public class KayitTamamlaServis extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
+
+        oturumuAcan = myPrefs.getString("OturumuAcan", "Hepsi");
+
+//        if (!oturumuAcan.equals("Hepsi")){
         fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
         try {
             gelenVeri = intent.getStringExtra("kayitBilgisi");
@@ -93,7 +107,6 @@ public class KayitTamamlaServis extends Service {
             nameSurname = veriParcala[1];
             ipadress = veriParcala[2];
             hashCozuldu = "";
-
         } catch (Exception e) {
         }
 
@@ -102,7 +115,7 @@ public class KayitTamamlaServis extends Service {
         if (blockYazildi == false) {
             kayitTamamla = (KayitTamamla) new KayitTamamla().execute();
         }
-
+//        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -207,6 +220,44 @@ public class KayitTamamlaServis extends Service {
     public void addBlock(Block newBlock) {
 
 
+        if (veritabani.length() > 0) {                                                 // veritabanında kayıt varsa
+            try {
+                for (int i = 0; i < veritabani.length(); i++) {
+                    prevNesne = veritabani.getJSONObject(i);
+                    type = prevNesne.getString("tpye");
+                    if (type.equals("kullanıcı")) {
+                        sayi++;
+                    }
+                }
+                difficulty = difficulty * sayi;
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+//        decryptAdSoyad + "//" + decryptMail + "//" + ip + "//" + userCoin;
+
+        if (!oturumuAcan.equals("Hepsi")) {
+            String[] oturumuacanparcala = oturumuAcan.split("//");
+            oturumuacanmail = oturumuacanparcala[1];
+            try {
+                oturumuacanmail =  AESCrypt.encrypt(encrypPass, oturumuacanmail);
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        if (oturumuacanmail.equals(" ")) {
+            String ip = myPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
+
+            try {
+                oturumuacanmail =  AESCrypt.encrypt(encrypPass, ip);
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+            }
+        }
+
         if (blockYazildi == false) {
             newBlock.mineBlockKayit(difficulty);
             blockchain.add(newBlock);
@@ -236,7 +287,10 @@ public class KayitTamamlaServis extends Service {
             yeniKayit.put("sifre", sifre);
             yeniKayit.put("timeStamp", timeStamp);
             yeniKayit.put("nonce", nonce);
-            yeniKayit.put("cihazAdi", Build.MODEL);
+            yeniKayit.put("kayıtolusturan", oturumuacanmail);
+            yeniKayit.put("type", "kullanıcı");
+            yeniKayit.put("coin", "0");
+
         } catch (JSONException e) {
             e.printStackTrace();
         }

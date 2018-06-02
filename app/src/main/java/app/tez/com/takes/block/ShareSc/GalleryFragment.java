@@ -26,9 +26,9 @@ import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import java.util.ArrayList;
 
 import app.tez.com.takes.R;
-import app.tez.com.takes.block.FilePaths;
-import app.tez.com.takes.block.FileSearch;
-import app.tez.com.takes.block.GridImageAdapter;
+import app.tez.com.takes.block.Utils.FilePaths;
+import app.tez.com.takes.block.Utils.FileSearch;
+import app.tez.com.takes.block.Utils.GridImageAdapter;
 
 
 public class GalleryFragment extends Fragment {

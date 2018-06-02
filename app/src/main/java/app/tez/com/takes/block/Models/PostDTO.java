@@ -9,11 +9,13 @@ public class PostDTO {
     String name;
     String description;
     String image;
+    String kategori;
 
-    public PostDTO(String name, String description, String image ) {
+    public PostDTO(String name, String description, String image, String kategori ) {
         this.name=name;
         this.description=description;
         this.image=image;
+        this.kategori=kategori;
     }
 
     public String getName() {
@@ -28,4 +30,5 @@ public class PostDTO {
         return image;
     }
 
+    public String getKategori(){return kategori;}
 }

@@ -29,9 +29,8 @@ import java.util.List;
 
 import app.tez.com.takes.R;
 import app.tez.com.takes.block.MainPage.BottomBarActivity;
-import app.tez.com.takes.block.TCPSERVERCLIENT.PostEkleTamamlaServis;
 import app.tez.com.takes.block.TCPSERVERCLIENT.PostGonderServis;
-import app.tez.com.takes.block.UniversalImageLoader;
+import app.tez.com.takes.block.Utils.UniversalImageLoader;
 
 
 public class NextActivity extends AppCompatActivity {
@@ -79,11 +78,11 @@ public class NextActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_next);
 
-        myPrefs = this.getSharedPreferences("myPrefs", MODE_WORLD_READABLE);
+        myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
 
         oturumuAcan = myPrefs.getString("OturumuAcan", "Default");
 
-        if(!oturumuAcan.equals("Default")) {
+        if (!oturumuAcan.equals("Default")) {
             oturumuAcanVeriler = oturumuAcan.split("//");
             userAdSoyad = oturumuAcanVeriler[0];
             userEmail = oturumuAcanVeriler[1];
@@ -155,10 +154,15 @@ public class NextActivity extends AppCompatActivity {
     }
 
     public void postEkleServiceCagir() {
-        String postBilgileri = description + "/" + userAdSoyad + "/" + userIpAdresi + "/" + imageUri;
+        if (intent.hasExtra(getString(R.string.selected_image))) {
+            imgUrl = intent.getStringExtra(getString(R.string.selected_image));
+        }
+
+        String postBilgileri = description + "/" + category + "/" + userAdSoyad + "/" + userIpAdresi + "/" + userEmail;
 
         Intent intent = new Intent(NextActivity.this, PostGonderServis.class);
         intent.putExtra("postBilgileri", postBilgileri);
+
         startService(intent);
 
     }

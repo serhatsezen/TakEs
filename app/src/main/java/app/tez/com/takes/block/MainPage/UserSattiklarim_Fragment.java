@@ -1,5 +1,6 @@
 package app.tez.com.takes.block.MainPage;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -51,11 +52,15 @@ import java.util.List;
 
 import app.tez.com.takes.R;
 import app.tez.com.takes.block.Adapter.PostAdapter;
+import app.tez.com.takes.block.Adapter.UserProfilPostAdapter;
 import app.tez.com.takes.block.KayitGiris.GirisEkrani;
 import app.tez.com.takes.block.Models.OturumuAcan;
 import app.tez.com.takes.block.Models.PostDTO;
 
-public class AnaSayfa extends Fragment {
+import static android.content.Context.MODE_PRIVATE;
+import static android.os.ParcelFileDescriptor.MODE_WORLD_READABLE;
+
+public class UserSattiklarim_Fragment extends Fragment {
 
     private static ListView lost_main_list;
     private static RelativeLayout relativeLayLost_Main;
@@ -77,23 +82,29 @@ public class AnaSayfa extends Fragment {
 
     ArrayList<PostDTO> postDTO;
     ListView listView;
-    private static PostAdapter postAdapter;
+    private static UserProfilPostAdapter postAdapter;
     JSONObject girisKontrolNesne;
-    String resimAdi, postDescription, userAdSoyad, kategori;
-    String decryptResim, decryptDescription, decryptAdSoyad, decryptKategori;
+    String resimAdi, postDescription, userAdSoyad, kategori, userMail;
+    String decryptResim, decryptDescription, decryptAdSoyad, decryptKategori, decrptUserMail;
     String password = "takesPass";
 
+    SharedPreferences myPrefs;
 
-    public AnaSayfa() {
+    String oturumuAcan;
+    String oturumuAcanMail;
+
+
+    public UserSattiklarim_Fragment() {
         // Required empty public constructor
     }
 
 
+    @SuppressLint("WrongConstant")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v = inflater.inflate(R.layout.fragment_lost_main, container, false);
+        View v = inflater.inflate(R.layout.fragment_sattiklarim_user, container, false);
 
         fileDirectory = new File(Environment.getExternalStorageDirectory() + "/" + DirectoryName);
 
@@ -103,6 +114,17 @@ public class AnaSayfa extends Fragment {
 
         vritabaniYukle();
 
+        sharedpreferences = getActivity().getSharedPreferences(PREFS, MODE_PRIVATE);
+        editor = sharedpreferences.edit();
+
+        myPrefs = getActivity().getSharedPreferences("myPrefs", MODE_PRIVATE);
+
+        oturumuAcan = myPrefs.getString("OturumuAcan", "Hepsi");
+
+
+        String[] kullaniciBilgileri = oturumuAcan.split("//");
+
+        oturumuAcanMail = kullaniciBilgileri[1];
 
         manager = getFragmentManager();
 
@@ -113,13 +135,12 @@ public class AnaSayfa extends Fragment {
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.setSupportActionBar(toolbar);
 
-        //get firebase auth instance
-
         appBarLayout = (AppBarLayout) v.findViewById(R.id.LostappBarLayout);
         relativeLayLost_Main = (RelativeLayout) v.findViewById(R.id.relativeLayLost_Main);
 
-        sharedpreferences = getActivity().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        sharedpreferences = getActivity().getSharedPreferences(PREFS, MODE_PRIVATE);
         editor = sharedpreferences.edit();
+
 
         category = sharedpreferences.getString("categoryShared", "Hepsi");
 
@@ -139,13 +160,17 @@ public class AnaSayfa extends Fragment {
                     postDescription = girisKontrolNesne.getString("description");
                     resimAdi = girisKontrolNesne.getString("resimAdi");
                     kategori = girisKontrolNesne.getString("kategori");
+                    userMail = girisKontrolNesne.getString("mail");
 
                     decryptAdSoyad = AESCrypt.decrypt(password, userAdSoyad);
                     decryptDescription = AESCrypt.decrypt(password, postDescription);
                     decryptKategori = AESCrypt.decrypt(password, kategori);
+                    decrptUserMail = AESCrypt.decrypt(password, userMail);
 
 //                    decryptResim = AESCrypt.decrypt(password, resimAdi);
-                    postDTO.add(new PostDTO(decryptAdSoyad, decryptDescription, resimAdi, decryptKategori));
+                    if (oturumuAcanMail.equals(decrptUserMail)) {
+                        postDTO.add(new PostDTO(decryptAdSoyad, decryptDescription, resimAdi, decryptKategori));
+                    }
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -158,7 +183,7 @@ public class AnaSayfa extends Fragment {
         }
         Collections.reverse(postDTO); // ADD THIS LINE TO REVERSE ORDER!
 
-        postAdapter = new PostAdapter(postDTO, getActivity().getApplicationContext());
+        postAdapter = new UserProfilPostAdapter(postDTO, getActivity().getApplicationContext());
 
         lost_main_list.setAdapter(postAdapter);
 

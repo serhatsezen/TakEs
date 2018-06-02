@@ -8,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
@@ -33,20 +32,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 
-import app.tez.com.takes.block.CheckForSDCard;
 import app.tez.com.takes.block.Models.DeviceDTO;
 
 public class DosyaGonderService extends Service {
@@ -62,7 +53,7 @@ public class DosyaGonderService extends Service {
     JSONObject girisKontrolNesne;
 
 
-    String gonderilecekDosya,socketIp,kendiIpAdresi,veritabanindanIpAdresi;
+    String gonderilecekDosya, socketIp, kendiIpAdresi, veritabanindanIpAdresi;
 
     SharedPreferences sharedPrefs;
     public static final String CIHAZLAR = "cihazlarshared";
@@ -79,7 +70,8 @@ public class DosyaGonderService extends Service {
         try {
             if (intent.getStringExtra("benHashiCozdum") != null) {
                 gonderilecekDosya = intent.getStringExtra("benHashiCozdum");
-            } else {}
+            } else {
+            }
 
         } catch (Exception e) {
         }
@@ -92,7 +84,8 @@ public class DosyaGonderService extends Service {
         try {
             if (intent.getStringExtra("dosya") != null) {
                 gonderilecekDosya = intent.getStringExtra("dosya");
-            } else {}
+            } else {
+            }
         } catch (Exception e) {
         }
 
@@ -103,7 +96,7 @@ public class DosyaGonderService extends Service {
 
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(DosyaGonderService.this);
 
-        kendiIpAdresi = sharedPrefs.getString("ipadresiSharedPrefences","192.168.1.0");
+        kendiIpAdresi = sharedPrefs.getString("ipadresiSharedPrefences", "192.168.1.0");
 
         String[] parts = kendiIpAdresi.split("\\.");
         String part1 = parts[0];
@@ -122,16 +115,14 @@ public class DosyaGonderService extends Service {
     }
 
     @Override
-    public void onCreate()
-    {
+    public void onCreate() {
         super.onCreate();
         intent = new Intent(BROADCAST_ACTION);
     }
 
     @SuppressLint("MissingPermission")
     @Override
-    public void onStart(Intent intent, int startId)
-    {
+    public void onStart(Intent intent, int startId) {
 
 
     }
@@ -177,19 +168,29 @@ public class DosyaGonderService extends Service {
             Socket s = null;
             Gson gson = new Gson();
             String json = sharedPrefs.getString(CIHAZLAR, null);
-            Type type = new TypeToken<ArrayList<DeviceDTO>>() {}.getType();
+            Type type = new TypeToken<ArrayList<DeviceDTO>>() {
+            }.getType();
             cihazlar = gson.fromJson(json, type);
 
 
-            for(int sira=0; sira<veritabani.length();sira++){                                       //veritabanindaki ip adresini kontrol ediyoruz
+            for (int sira = 0; sira < veritabani.length(); sira++) {                                       //veritabanindaki ip adresini kontrol ediyoruz
                 try {                                                                               //cihazlar listesinde yoksa ekliyoruz.
                     girisKontrolNesne = veritabani.getJSONObject(sira);
                     veritabanindanIpAdresi = girisKontrolNesne.getString("ipaddres");
 
-                    if(!cihazlar.contains(veritabanindanIpAdresi)) {
+                    if (!cihazlar.contains(veritabanindanIpAdresi)) {
                         DeviceDTO veritabanindanIp = new DeviceDTO();
                         veritabanindanIp.setIp(veritabanindanIpAdresi);
                         cihazlar.add(veritabanindanIp);
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(DosyaGonderService.this,
+                                        "cihazEklendi/////" + veritabanindanIpAdresi,
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
+
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();

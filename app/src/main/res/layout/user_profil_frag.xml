@@ -46,7 +46,8 @@
                         android:layout_alignParentTop="true"
                         android:scaleType="centerCrop"
                         android:src="@drawable/back"
-                        tools:ignore="UnknownId" />
+                        tools:ignore="UnknownId"
+                        android:layout_alignParentLeft="true" />
 
                     <View
                         android:id="@+id/backgroundView"
@@ -73,6 +74,7 @@
                         android:layout_alignBottom="@+id/ivUserProfilePhoto"
                         android:layout_marginBottom="28dp"
                         android:layout_marginStart="13dp"
+                        android:visibility="gone"
                         android:layout_toEndOf="@+id/ivUserProfilePhoto"
                         android:background="@null"
                         app:srcCompat="@drawable/messagebtn"
@@ -107,11 +109,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_below="@+id/fullnameuser"
-                        android:layout_alignStart="@+id/edit_prof_btn"
+                        android:layout_alignStart="@+id/ivUserProfilePhoto"
                         android:layout_marginStart="21dp"
                         android:maxLines="1"
                         android:padding="4dp"
-                        android:text="\@serhatsezn"
+                        android:text="0.002"
                         android:textColor="#bbbbbb"
                         android:textSize="12sp"
                         tools:ignore="RtlCompat" />
@@ -120,12 +122,13 @@
                         android:id="@+id/city"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignEnd="@+id/dm_imgBtn_another"
-                        android:layout_below="@+id/fullnameuser"
+                        android:layout_alignBaseline="@+id/usernameprof"
+                        android:layout_alignBottom="@+id/usernameprof"
                         android:layout_toEndOf="@+id/usernameprof"
+                        android:layout_toRightOf="@+id/usernameprof"
                         android:maxLines="1"
                         android:padding="4dp"
-                        android:text="Eskişehir"
+                        android:text="Coin"
                         android:textColor="#ffffff"
                         android:textSize="12sp"
                         tools:ignore="RtlCompat" />

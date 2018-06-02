@@ -1,4 +1,4 @@
-package app.tez.com.takes.block;
+package app.tez.com.takes.block.Utils;
 
 /**
  * Created by serhat on 22.04.2018.

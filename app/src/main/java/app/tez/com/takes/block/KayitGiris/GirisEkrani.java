@@ -59,7 +59,10 @@ public class GirisEkrani extends AppCompatActivity {
     SharedPreferences myPrefs;
     SharedPreferences.Editor editor;
     String decryptMail, decryptSifre;
-    String password = "takesPass";
+    String password = "takesPass";      //AES için şifreleme keyi
+    String userCoin;
+
+    String oturumuAcan;
 
 
     @SuppressLint("WifiManagerLeak")
@@ -73,7 +76,7 @@ public class GirisEkrani extends AppCompatActivity {
         if (!fileDirectory.exists())
             fileDirectory.mkdir();
 
-        myPrefs = this.getSharedPreferences("myPrefs", MODE_WORLD_READABLE);
+        myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
         editor = myPrefs.edit();
 
 
@@ -89,6 +92,19 @@ public class GirisEkrani extends AppCompatActivity {
 
         Intent cihazlarServis = new Intent(GirisEkrani.this, CihazlarServis.class);
         startService(cihazlarServis);
+
+
+        oturumuAcan = myPrefs.getString("OturumuAcan", "Hepsi");
+
+
+        if (!oturumuAcan.equals("Hepsi")) {
+            Intent i = new Intent(GirisEkrani.this, BottomBarActivity.class);
+            i.putExtra("veritabani", veritabani.toString());
+            i.putExtra("OturumuAcan", oturumuAcan);
+            startActivity(i);
+        }
+
+
 //
 //        Intent portServis = new Intent(GirisEkrani.this, PortAcServis.class);
 //        startService(portServis);
@@ -99,8 +115,6 @@ public class GirisEkrani extends AppCompatActivity {
         email = (EditText) findViewById(R.id.input_email);
         girisBtn = (Button) findViewById(R.id.btn_login);
 
-        email.setText("serhattsezen@gmail.com");
-        sifre.setText("srNsJfsW3cZCkfxhpEThx3N27kLK2cSqaW6E7m2Aij");
 
         kayitOlBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -127,29 +141,31 @@ public class GirisEkrani extends AppCompatActivity {
                             usersifre = girisKontrolNesne.getString("sifre");
                             decryptMail = AESCrypt.decrypt(password, useremail);
                             decryptSifre = AESCrypt.decrypt(password, usersifre);
-                        } catch (Exception e) {
+                            userAdSoyad = girisKontrolNesne.getString("adsoyad");
+                            userCoin = girisKontrolNesne.getString("coin");
 
-                        }
-                        userAdSoyad = girisKontrolNesne.getString("adsoyad");
+                            String decryptAdSoyad = AESCrypt.decrypt(password, userAdSoyad);
 
-                        String decryptAdSoyad = AESCrypt.decrypt(password, userAdSoyad);
+                            if (decryptMail.equals(edtxEmail) && decryptSifre.equals(edtxSifre) && decryptMail != null && decryptSifre != null) {
 
-                        if (decryptMail.equals(edtxEmail) && decryptSifre.equals(edtxSifre) && decryptMail != null && decryptSifre != null) {
+                                OturumuAcan oturumuAcan = new OturumuAcan();
+                                oturumuAcan.setAdsoyad(decryptAdSoyad);
+                                oturumuAcan.setEmail(decryptMail);
+                                oturumuAcan.setFromIP(ip);
 
-                            OturumuAcan oturumuAcan = new OturumuAcan();
-                            oturumuAcan.setAdsoyad(decryptAdSoyad);
-                            oturumuAcan.setEmail(decryptMail);
-                            oturumuAcan.setFromIP(ip);
+                                String oturmuAcan = decryptAdSoyad + "//" + decryptMail + "//" + decryptSifre + "//" + ip + "//" + userCoin;
 
-                            String oturmuAcan = decryptAdSoyad + "//" + decryptMail + "//" + ip;
+                                editor.putString("OturumuAcan", oturmuAcan);
+                                editor.commit();
 
-                            editor.putString("OturumuAcan", oturmuAcan);
-                            editor.commit();
+                                Intent i = new Intent(GirisEkrani.this, BottomBarActivity.class);
+                                i.putExtra("veritabani", veritabani.toString());
+                                i.putExtra("OturumuAcan", oturumuAcan);
+                                startActivity(i);
+                            }
 
-                            Intent i = new Intent(GirisEkrani.this, BottomBarActivity.class);
-                            i.putExtra("veritabani", veritabani.toString());
-                            i.putExtra("OturumuAcan", oturumuAcan);
-                            startActivity(i);
+                        }  catch (JSONException e) {
+                            e.printStackTrace();
                         }
                     }
                 } catch (JSONException e) {

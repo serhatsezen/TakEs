@@ -8,6 +8,8 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
@@ -23,14 +25,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -39,7 +45,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
+import java.util.Random;
 
 import app.tez.com.takes.block.Block.Block;
 import app.tez.com.takes.block.Models.DeviceDTO;
@@ -75,7 +83,9 @@ public class ServerService extends Service {
 
     public KayitTamamlaServis kayitTamamlaServis = new KayitTamamlaServis();
     public PostEkleTamamlaServis postEkleTamamlaServis = new PostEkleTamamlaServis();
+    Handler updateConversationHandler;
 
+    boolean resimGonder = false;
 
     @Nullable
     @Override
@@ -102,10 +112,12 @@ public class ServerService extends Service {
     @Override
     public void onStart(Intent intent, int startId) {
         hashCozuldu = false;
+        updateConversationHandler = new Handler();
 
         serverSocketThread = new ServerSocketThread();
         serverSocketThread.start();
     }
+
     //---------- JSON Dosyasındaki verileri burada uygulamaya yüklüyoruz.
     public void veritabaniYukle() {
         File dosya = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
@@ -131,6 +143,7 @@ public class ServerService extends Service {
             e.printStackTrace();
         }
     }
+
     private String getIpAddress() {
         String ip = "";
         try {
@@ -187,7 +200,6 @@ public class ServerService extends Service {
                 }
             }
         }
-
     }
 
     //gelen dosya
@@ -208,12 +220,18 @@ public class ServerService extends Service {
                 final String incomingMsg = in.readLine();
 
                 if (incomingMsg == null) {
-
                 } else if (incomingMsg.contains("cihazlaraEkleBeni")) {
                     String[] parts = incomingMsg.split("/////");
                     String cihazlaraEKleBeni = parts[0];
                     final String gelenIP = parts[1];
-
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(ServerService.this,
+                                    "cihazlaraEkleBeni/////" + incomingMsg,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
 
                     DeviceDTO deviceDTO = new DeviceDTO();
                     deviceDTO.setIp(gelenIP);
@@ -263,15 +281,25 @@ public class ServerService extends Service {
                         PostEkleTamamlaServis.postEkleTamamlaServis.stopSelf();
                         PostEkleTamamlaServis.postEkleTamamlaServis.hashCozulduPost = "dur";
                     } else if (nereye.equals("postEkle")) {
-                        Intent kayitService = new Intent(ServerService.this, PostEkleTamamlaServis.class);
-                        kayitService.putExtra("postBilgileri", gelenveri);
-                        startService(kayitService);
+                        Intent postEkleTamamlaServis = new Intent(ServerService.this, PostEkleTamamlaServis.class);
+                        postEkleTamamlaServis.putExtra("postBilgileri", gelenveri);
+                        startService(postEkleTamamlaServis);
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ServerService.this,
+                                        "postBilgileri/////" + gelenveri,
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
                     } else if (nereye.equals("dosya")) {
                         //-- veritabani'nin son halini JSON dosyasına kaydediyoruz.
                         veritabanımız = new File(fileDirectory.getAbsolutePath() + "/" + FileName);
                         FileOutputStream fileOutputStream = new FileOutputStream(veritabanımız);
                         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
-                        outputStreamWriter.write(gelenveri);
+                        if (!gelenveri.equals("istek")) {
+                            outputStreamWriter.write(gelenveri);
+                        }
                         outputStreamWriter.close();
                         fileOutputStream.close();
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -302,7 +330,6 @@ public class ServerService extends Service {
         }
     }
 
-
     public void saveArrayList(ArrayList<DeviceDTO> list, String key) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ServerService.this);
         SharedPreferences.Editor editor = prefs.edit();
@@ -311,7 +338,6 @@ public class ServerService extends Service {
         editor.putString(key, json);
         editor.apply();
     }
-
 
     @Override
     public void onDestroy() {

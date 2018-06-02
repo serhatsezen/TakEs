@@ -15,12 +15,6 @@
         app:showAsAction="ifRoom"/>
 
     <item
-        android:id="@+id/action_bottombar_maps"
-        android:icon="@drawable/ic_place_black_36dp"
-        android:title="Harita"
-        app:showAsAction="ifRoom"/>
-
-    <item
         android:id="@+id/action_bottombar_profil"
         android:icon="@drawable/ic_account_box_black_36dp"
         android:title="Profil"
